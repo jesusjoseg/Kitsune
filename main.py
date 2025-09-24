@@ -393,7 +393,7 @@ class Mainwindow(QMainWindow):
             self.ComboDescripcionCom1.addItems(["piel", "tela", "Algodón", "Yute"])
 
 app = QApplication(sys.argv)
-app.setWindowIcon(QIcon("main_0e7c6a33-3a9d-403c-99c6-235aaa786b1d.jpg"))
+#app.setWindowIcon(QIcon("main_0e7c6a33-3a9d-403c-99c6-235aaa786b1d.jpg"))
 window = Mainwindow()
 window.show()
 sys.exit(app.exec())

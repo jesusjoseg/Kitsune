@@ -1,16 +1,19 @@
+from io import BytesIO
 import requests
+from PIL.Image import Image
 from PyQt5.QtCore import QTimer,QSize,QDate
 from PyQt5.QtGui import QIcon,QFont
 from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWindow,
                              QVBoxLayout,QHBoxLayout,QTabWidget,QMenuBar ,QComboBox,
                              QLineEdit,QRadioButton,QTableWidget,QSpinBox,QDoubleSpinBox,
-                             QFileDialog,QDateEdit)
+                             QFileDialog,QDateEdit,QTableWidgetItem)
 import sys
 #from PyQt5.uic.Compiler.qtproxies import QtGui
 #from win32con import VER_PLATFORM_WIN32_NT
 import os
+import io
 from Conexion import con,cur
-#import PIL
+from PIL import Image
 import mimetypes
 
 
@@ -54,14 +57,24 @@ class Mainwindow(QMainWindow):
             descargar.raise_for_status()
             codificado = descargar.headers.get('content-type')
             extesion = mimetypes.guess_extension(codificado)
-            if extesion =="webp":
-                pass
-            TempFIle = os.path.join(FileImagen,f"{NombreImage}{extesion}")
-            with open(TempFIle,"wb") as f:
-                for chunk in descargar.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-            print ("Descargado imagene")
+            Contenido = descargar.content
+            if extesion ==".webp":
+                try:
+                    imagenes = Image.open(BytesIO(Contenido))
+                    ExtrecionF =".png"
+                    Archivotem = os.path.join(FileImagen,f"{NombreImage}{ExtrecionF}")
+                    imagenes.save(Archivotem,"PNG")
+                    print(f"Éxito: Imagen WebP convertida y guardada como PNG en {Archivotem}")
+
+                except Exception as e:
+                    print(f"Error en abri el webp: {e}")
+            else:
+                TempFIle = os.path.join(FileImagen,f"{NombreImage}{extesion}")
+                with open(TempFIle,"wb") as f:
+                    for chunk in descargar.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                print ("Descargado imagene")
         except requests.exceptions.RequestException as e:
             print(f"Error en la descarga de imagagen {e}")
     def Cliente2(self):
@@ -104,6 +117,36 @@ class Mainwindow(QMainWindow):
          Referencias Text,
          Cantidad Real
          );""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS Productos(idProducto INTEGER PRIMARY KEY AUTOINCREMENT,
+        Codigo Text Not null,
+        Nombre Text Not null,
+        Marca Text Not null,
+        Tipo INTEGER Not Null,
+        Descripcion Text not null,
+        PVentas Real ,
+        PComra Real not null,
+        UrlImagen Text,
+        Stock Integer,
+        FOREIGN KEY (Tipo) REFERENCES Tipo(idTipo));""")
+        cur.execute("""CREATE TABLE if not exists COMPRA(idCompra INTEGER PRIMARY KEY AUTOINCREMENT  ,
+         Fecha TEXT NOT NULL,
+         MontCompra REAL NOt NUll
+         );""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS Detalles_Compra(idDetalles_Compra INTEGER PRIMARY KEY AUTOINCREMENT,
+        idCompra INTEGER not null,
+        idProducto INTEGER not null,
+        Cantidad INTEGER NOT NULL,
+        PrecioCom REAL NOT NULL,
+        FOREIGN KEY (idCompra) REFERENCES COMPRA(idCompra),
+        FOREIGN KEY (idProducto) REFERENCES Productos(idProducto));""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS VENTA(idVentas INTEGER PRIMARY KEY AUTOINCREMENT,
+        Fecha TEXT NOT NULL,
+        TotalVenta REAL NOT NULL,
+        TipoPago TEXT NOT NULL,
+        idCliente INTEGER,
+        FOREIGN KEY(idCliente) REFERENCES Clientes(idCliente));""")
+        #cur.execute()
+        #cur.execute()
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Ropa'); """)
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Bolsa');""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Perfume');""")
@@ -132,11 +175,16 @@ class Mainwindow(QMainWindow):
         Etota =QLabel("Total: ")
         Etotal =QLabel("<b>$0.00</b>")
         #Etotal.
-        EMetodo = QLabel("Metodo de ago")
+        EMetodo = QLabel("Metodo de Pago")
         self.ComboMetodo = QComboBox()
         self.ComboMetodo.addItems(["Efectivo","Credito"])
         ECliente = QLabel("Cliente")
         self.ComboCliente =QComboBox()
+        self.ComboCliente.addItem("Selecionar Cliente: ")
+        cur.execute("SELECT Nombre || ' ' || Apellido as NombreCliente FROM Clientes")
+        RefClientes2 = cur.fetchall()
+        for t in RefClientes2:
+            self.ComboCliente.addItem(t[0])
         horizon2.addWidget(Etota)
         horizon2.addWidget(Etotal)
         horizon2.addWidget(EMetodo)
@@ -151,6 +199,11 @@ class Mainwindow(QMainWindow):
         self.ButtonVenta.clicked.connect(self.Conexion)
     def Compras(self):
         vent_Compras = QVBoxLayout()
+        HorizontalCom = QHBoxLayout()
+        CodigoCom = QLabel("Codigo: ")
+        self.LECodigoCom =QLineEdit()
+        HorizontalCom.addWidget(CodigoCom)
+        HorizontalCom.addWidget(self.LECodigoCom)
         HorizontalCom1 = QHBoxLayout()
         LNombreCom = QLabel("Nombre: ")
         self.lENombreCom =QLineEdit()
@@ -205,8 +258,9 @@ class Mainwindow(QMainWindow):
         HorizontalCom8.addWidget(self.ButtonCom)
         etiqueta=QLabel("<b>Esta es la prestana de Compra<b>")
         etiqueta.setFont(QFont("arial",12))
-        etiqueta.setFixedSize(QSize(199,32))
+        etiqueta.setFixedSize(QSize(263,32))
         vent_Compras.addWidget(etiqueta)
+        vent_Compras.addLayout(HorizontalCom)
         vent_Compras.addLayout(HorizontalCom1)
         vent_Compras.addLayout(HorizontalCom2)
         vent_Compras.addLayout(HorizontalCom3)
@@ -216,7 +270,7 @@ class Mainwindow(QMainWindow):
         vent_Compras.addLayout(HorizontalCom7)
         vent_Compras.addLayout(HorizontalCom8)
         self.Widget1.setLayout(vent_Compras)
-    def Invectario(self):#esta es la ventana de invertario que mostrara los dato de la tabla productros
+    def Invectario(self):#esta es la ventana de invertario que mostrara los dato de la tabla Productros
         Vent_Invectstio= QVBoxLayout()
         HorizontaInve1 = QHBoxLayout()#Codigo de Escaneor de barra
         ECodigo = QLabel("Codigo: ")
@@ -228,12 +282,18 @@ class Mainwindow(QMainWindow):
         self.ComboImagen = QComboBox()
         self.ComboImagen.addItems(["Url","Archivo"])
         self.LineImagen = QLineEdit()
-        self.ButtonFIle= QPushButton("...")
+        self.FileImagen = QLineEdit()
+        self.FileImagen.setReadOnly(True)
+        self.FileImagen.hide()
+        self.ComboImagen.currentIndexChanged.connect(self.CambioFile)
+        self.ButtonFIle= QPushButton("...")#se usada este boton Para Puebla de descagar y modificacion de imagen
         self.ButtonFIle.setFixedSize(21,21)
+        self.ButtonFIle.hide()
         #FileIMagen =QFileDialog()
         HorizontaInve2.addWidget(LImagen)
         HorizontaInve2.addWidget(self.ComboImagen)
         HorizontaInve2.addWidget(self.LineImagen)
+        HorizontaInve2.addWidget(self.FileImagen)
         HorizontaInve2.addWidget(self.ButtonFIle)
         #HorizontaInve2.addWidget(FileIMagen)
         HorizontaInve3 = QHBoxLayout()#Nombre de producto
@@ -257,13 +317,13 @@ class Mainwindow(QMainWindow):
         HorizontaInve5.addWidget(LTipo)
         HorizontaInve5.addWidget(self.ComboTipo)
         HorizontaInve6 = QHBoxLayout()#recio de venta de producto
-        LRecioVenta =QLabel("precio de venta: ")
+        LRecioVenta =QLabel("Precio de venta: ")
         self.SRecioVEnta =QDoubleSpinBox()
         self.SRecioVEnta.setMaximum(999999.99)
         HorizontaInve6.addWidget(LRecioVenta)
         HorizontaInve6.addWidget(self.SRecioVEnta)
         HorizontaInve7 = QHBoxLayout()#recio de comra de producto
-        LRpecioComra = QLabel("precio de compra: ")
+        LRpecioComra = QLabel("Precio de compra: ")
         self.SrecioComra=QDoubleSpinBox()
         self.SrecioComra.setMaximum(999999.99)
         HorizontaInve7.addWidget(LRpecioComra)
@@ -275,14 +335,14 @@ class Mainwindow(QMainWindow):
         HorizontaInve8.addWidget(SStrock)
         HorizontaInve9 = QHBoxLayout()
         self.ButtonActulizar =QPushButton("Actualizar")
-        self.ButtonNuevo = QPushButton("Nuevo/Limiar")#se encargar de limiar el formulario
+        self.ButtonNuevo = QPushButton("Nuevo/Limpiar")#se encargar de limiar el formulario
         self.ButtonEliminar = QPushButton("Eliminar")
         HorizontaInve9.addWidget(self.ButtonActulizar)
         HorizontaInve9.addWidget(self.ButtonNuevo)
         HorizontaInve9.addWidget(self.ButtonEliminar)
         #Aqui Va la tabla de todo los productos
         self.TablaInvertario =QTableWidget(0,8)
-        self.TablaInvertario.setHorizontalHeaderLabels(["Codigo","Imagen","Nombre","Marca","Tipo","precio Venta","percio Comra","Stock"])
+        self.TablaInvertario.setHorizontalHeaderLabels(["Codigo","Imagen","Nombre","Marca","Tipo","Precio Venta","Precio Compra","Stock"])
         Vent_Invectstio.addLayout(HorizontaInve1)
         Vent_Invectstio.addLayout(HorizontaInve2)
         Vent_Invectstio.addLayout(HorizontaInve3)
@@ -294,6 +354,27 @@ class Mainwindow(QMainWindow):
         Vent_Invectstio.addLayout(HorizontaInve9)
         Vent_Invectstio.addWidget(self.TablaInvertario)
         self.Widget2.setLayout(Vent_Invectstio)
+        self.ButtonFIle.clicked.connect(self.FileDialogo)
+        self.ButtonActulizar.clicked.connect(self.Actulizarproducto)
+    def FileDialogo(self):
+        pass
+    def CambioFile(self):
+        if self.ComboImagen.currentIndex()==0:
+            self.LineImagen.show()
+            self.FileImagen.hide()
+            self.ButtonFIle.hide()
+        else:
+            self.LineImagen.hide()
+            self.FileImagen.show()
+            self.ButtonFIle.show()
+    def Actulizarproducto(self):
+        if self.ComboImagen.currentIndex(0):
+            CodigoImagen = self.LNCodigoIn.text()
+            self.DescargaImagen()
+            UrlImagen =f"Imagen/Download/{CodigoImagen}.png"
+        elif self.ComboImagen.currentIndex(1):
+            UrlImagen = self.LineImagen.text()
+        cur.execute("""INSERT INTO """)
     def Clientes(self):#este es la ventana de regristro de cliente
         RegCliente= QVBoxLayout()
         HorizontalCliente1 =QHBoxLayout()
@@ -342,8 +423,16 @@ class Mainwindow(QMainWindow):
         HorizontalCliente6.addWidget(self.Cantida)
         Etiquetas = QLabel("<b>Regristo de clientes</b>")
         Etiquetas.setFont(QFont("Arial",12))
-        TablaCliente =QTableWidget(0,6)
-        TablaCliente.setHorizontalHeaderLabels(["Nombre","Apellido","Telefono","Direcion","Refrerencia","Cantida"])
+        self.TablaCliente =QTableWidget(0,6)
+        self.TablaCliente.setHorizontalHeaderLabels(["Nombre","Apellido","Telefono","Direcion","Refrerencia","Cantida"])
+        cur.execute("select Nombre,Apellido,Telefono,Direccion,Referencias,Cantidad from clientes ")
+        Tabla = cur.fetchall()
+        numFila = len(Tabla)
+        self.TablaCliente.setRowCount(numFila)
+        for Valorfila, regristo in enumerate(Tabla):
+            for ValorColumna , Valoew in enumerate(regristo):
+                tablaValores =QTableWidgetItem(str(Valoew))
+                self.TablaCliente.setItem(Valorfila,ValorColumna,tablaValores)
         self.EStado = QLabel("aqui")
         Button1 =QPushButton("Regristar")
         RegCliente.addWidget(Etiquetas)
@@ -355,7 +444,7 @@ class Mainwindow(QMainWindow):
         RegCliente.addLayout(HorizontalCliente6)
         RegCliente.addWidget(Button1)
         RegCliente.addWidget(self.EStado)
-        RegCliente.addWidget(TablaCliente)
+        RegCliente.addWidget(self.TablaCliente)
         self.Widget3.setLayout(RegCliente)
         Button1.clicked.connect(self.Regristar)
     def Regristar(self):#este es para regrista los cliente de uso de creditos
@@ -363,10 +452,19 @@ class Mainwindow(QMainWindow):
         apellido = self.Apellido.text()
         telefono = self.Telefono.text()
         direcion = self.Direcion.text()
-        refrerencia = self.Refrerencia.currentText()
+        refrerencia = self.Refrerencia.currentIndex()
+        if refrerencia == 0:
+            print("Refrerencia esta Vacio")
+            refrerencia2 = ""
+        elif refrerencia > 0 :
+            refrerencia2 =self.Refrerencia.currentText()
+        indice = self.Cantida.currentIndex()
+        if indice == 0:
+            self.EStado.setText("<b>Seleciona un valor en Catidad</b>")
+            return
         cantidad = self.Cantida.currentText().replace("$", "").replace(",", "")
-        print(f"Nombre: {nombre} Apellido: {apellido} Telefono: {telefono} Direcion {direcion} Refrerancia: {refrerencia} Cantidad: {cantidad}")
-        cur.execute("""INSERT INTO Clientes (Nombre,Apellido,Telefono,Direccion,Referencias,Cantidad)VALUES(?,?,?,?,?,?)""",(nombre,apellido,telefono,direcion,refrerencia,cantidad))
+        print(f"Nombre: {nombre} Apellido: {apellido} Telefono: {telefono} Direcion {direcion} Refrerancia: {refrerencia2} Cantidad: {cantidad}")
+        cur.execute("""INSERT INTO Clientes (Nombre,Apellido,Telefono,Direccion,Referencias,Cantidad)VALUES(?,?,?,?,?,?)""",(nombre,apellido,telefono,direcion,refrerencia2,cantidad))
         con.commit()
         print("Cliente Regristado")
         self.Nombrec.clear()
@@ -376,7 +474,24 @@ class Mainwindow(QMainWindow):
         self.Refrerencia.setCurrentIndex(0)
         self.Cantida.setCurrentIndex(0)
         self.EStado.setText("Cliente Regristado")
+        self.ActulizarCliente()
         QTimer.singleShot(3000,self.EStado.clear)
+    def ActulizarCliente(self):
+        self.Refrerencia.clear()
+        self.Refrerencia.addItem("Refrerencia: ")
+        cur.execute("SELECT Nombre || ' ' || Apellido as NombreCliente FROM Clientes")
+        RefClientes = cur.fetchall()
+        for t in RefClientes:
+            self.Refrerencia.addItem(t[0])
+        cur.execute("select Nombre,Apellido,Telefono,Direccion,Referencias,Cantidad from clientes ")
+        Tabla = cur.fetchall()
+        numFila = len(Tabla)
+        self.TablaCliente.setRowCount(numFila)
+        for Valorfila, regristo in enumerate(Tabla):
+            for ValorColumna, Valoew in enumerate(regristo):
+                tablaValores = QTableWidgetItem(str(Valoew))
+                self.TablaCliente.setItem(Valorfila, ValorColumna, tablaValores)
+
     def Conexion(self):#este codigo sirve para verdifica la funcionalida de botones (borra despuses)
         x = 404
         print("no hay codigo erro",x)
@@ -390,10 +505,22 @@ class Mainwindow(QMainWindow):
             self.ComboDescripcionCom3.addItems(["CH","M","G","ExG"])
         elif self.TipoCom.currentText() =="Bolsa":
             self.LDescripcionCom1.setText("Material: ")
+            self.ComboDescripcionCom2.addItems(["CH", "M", "G", "ExG"])
+            self.ComboDescripcionCom3.addItems(["CH", "M", "G", "ExG"])
             self.ComboDescripcionCom1.addItems(["piel", "tela", "Algodón", "Yute"])
+        elif self.TipoCom.currentText() =="Perfume":
+            self.LDescripcionCom1.setText("Material: ")
+            self.ComboDescripcionCom2.addItems(["CH", "M", "G", "ExG"])
+            self.ComboDescripcionCom3.addItems(["CH", "M", "G", "ExG"])
+            self.ComboDescripcionCom1.addItems(["piel", "tela", "Algodón", "Yute"])
+        elif self.TipoCom.currentText() =="Accesorios":
+            self.LDescripcionCom1.setText("Material: ")
+            self.ComboDescripcionCom1.addItems(["Oro", "Lata", "Cobre", "Bronze"])
+            self.ComboDescripcionCom2.addItems(["piel", "tela", "Algodón", "Yute"])
+            self.ComboDescripcionCom3.addItems(["CH", "M", "G", "ExG"])
 
 app = QApplication(sys.argv)
-#app.setWindowIcon(QIcon("main_0e7c6a33-3a9d-403c-99c6-235aaa786b1d.jpg"))
+app.setWindowIcon(QIcon("main_0e7c6a33-3a9d-403c-99c6-235aaa786b1d.jpg"))
 window = Mainwindow()
 window.show()
 sys.exit(app.exec())

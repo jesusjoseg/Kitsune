@@ -8,7 +8,7 @@ from datetime import date
 
 
 hoy = date.today()
-def Reporte():
+def GeneralReporte():
     h,w =letter
     Reportedir = "pdf/Reporte"
     os.makedirs(Reportedir,exist_ok=True)
@@ -17,5 +17,4 @@ def Reporte():
     c.drawString(49,h-49,f"Reporte del dia de: {hoy}",1)
     c.save()
 
-if __name__ == "__main__":
-    Reporte()
+

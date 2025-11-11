@@ -1,22 +1,23 @@
+import sqlite3
 from io import BytesIO
 import requests
 from PIL.Image import Image
-from PyQt5.QtCore import QTimer,QSize,QDate
+from PyQt5.QtCore import QTimer, QSize, QDate, Qt
 from PyQt5.QtGui import QIcon,QFont,QPixmap
 from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWindow,
                              QVBoxLayout,QHBoxLayout,QTabWidget,QMenuBar ,QComboBox,
-                             QLineEdit,QRadioButton,QTableWidget,QSpinBox,QDoubleSpinBox,
+                             QLineEdit,QTableWidget,QSpinBox,QDoubleSpinBox,
                              QFileDialog,QDateEdit,QTableWidgetItem,QMessageBox)
 import sys
-#from PyQt5.uic.Compiler.qtproxies import QtGui
-#from win32con import VER_PLATFORM_WIN32_NT
 import os
-import io
 from Conexion import con,cur
 from PIL import Image
 import mimetypes
-import Ticket
 import reporte
+from datetime import datetime, date
+from Ticket import CreaTicket
+import platform
+import subprocess
 
 
 class Mainwindow(QMainWindow):
@@ -33,7 +34,7 @@ class Mainwindow(QMainWindow):
         self.Widget5 = QWidget()
         #self.setStyleSheet("QLabel {color: white}")
         layout = QVBoxLayout()
-        self.setWindowTitle("no tengo nada")
+        self.setWindowTitle("Sistema de Gestión Comercial con Integración a Plataformas de Comercio Electrónico para Cuka's Boutique y Belleza")
         self.setGeometry(100,100,800,640)
         self.setLayout(layout)
         self.tab.addTab(self.Widget,"Ventas")
@@ -79,52 +80,392 @@ class Mainwindow(QMainWindow):
                 print ("Descargado imagene")
         except requests.exceptions.RequestException as e:
             print(f"Error en la descarga de imagagen {e}")
+
     def Cliente2(self):
-        ventanaCliente= QVBoxLayout()
-        HoriazontalClien2=QHBoxLayout()
-        Etiqueta1=QLabel("<b>Clientes<b>")
-        NombreRe= QLabel("Nombre: ")
-        self.ComboCliente2=QComboBox()
-        cur.execute("SELECT IdCliente, Nombre, Apellido FROM Clientes ORDER BY Nombre")
-        RefClientes4 = cur.fetchall()
-        self.ComboCliente2.clear()
-        self.ComboCliente2.addItem("--- Selecciona un Cliente ---", userData=None)
-        for idCliente, Nombre, Apellido in RefClientes4:
-            NobreCompeto = f"{Nombre} {Apellido}"
-            self.ComboCliente2.addItem(NobreCompeto,userData=idCliente)
+        # Contenedor principal de la ventana de gestión de clientes
+        ventanaCliente = QVBoxLayout()
+
+        # -------------------- Sección de Búsqueda de Cliente --------------------
+        HoriazontalClien2 = QHBoxLayout()
+        Etiqueta1 = QLabel("<b>Clientes</b>")
+        Etiqueta1.setAlignment(Qt.AlignCenter)
+
+        NombreRe = QLabel("Nombre: ")
+        self.ComboCliente2 = QComboBox()
+
+        # Rellenar ComboBox con clientes
+        try:
+            cur.execute("SELECT IdCliente, Nombre, Apellido FROM Clientes ORDER BY Nombre")
+            RefClientes4 = cur.fetchall()
+            self.ComboCliente2.clear()
+            self.ComboCliente2.addItem("--- Selecciona un Cliente ---", userData=None)
+            for idCliente, Nombre, Apellido in RefClientes4:
+                NobreCompeto = f"{Nombre} {Apellido}"
+                # userData guarda el ID del cliente
+                self.ComboCliente2.addItem(NobreCompeto, userData=idCliente)
+        except Exception as e:
+            QMessageBox.critical(self, "Error DB", f"Error al cargar clientes: {e}")
+
         self.BuscarCliente = QPushButton("Buscar Cliente")
+
         HoriazontalClien2.addWidget(NombreRe)
         HoriazontalClien2.addWidget(self.ComboCliente2)
+
         ventanaCliente.addWidget(Etiqueta1)
         ventanaCliente.addLayout(HoriazontalClien2)
         ventanaCliente.addWidget(self.BuscarCliente)
+
+        # Widget que contendrá la información dinámica de crédito/edición
+        self.WidgetDetalleCredito = QWidget()
+        self.LayoutDetalleCredito = QVBoxLayout(self.WidgetDetalleCredito)
+
+        ventanaCliente.addWidget(self.WidgetDetalleCredito)
+
         self.Widget4.setLayout(ventanaCliente)
         self.BuscarCliente.clicked.connect(self.AbriClinete)
     def AbriClinete(self):
-        ClienteBuscado = self.ComboCliente2.currentData()
-        if self.ComboCliente2.currentData()== None:
-            QMessageBox.warning(self,"Advertencia","Debe Seleccionar un Cliente Por favor")
+        self.id_cliente_seleccionado = self.ComboCliente2.currentData()
+        if self.id_cliente_seleccionado is None:
+            QMessageBox.warning(self, "Advertencia", "Debe Seleccionar un Cliente Por favor")
             return
+
+    # Obtener el saldo pendiente total del cliente
+        try:
+        # Se obtiene la suma de todos los saldos pendientes para este cliente
+            cur.execute("""
+                    SELECT SUM(C.saldo_pendiente) 
+                    FROM Cuentas_Por_Cobrar C
+                    JOIN VENTA V ON C.idVentas = V.idVentas
+                    WHERE V.idCliente = ? AND C.saldo_pendiente > 0
+                """, (self.id_cliente_seleccionado,))
+
+            resultado = cur.fetchone()
+            saldo_pendiente_total = resultado[0] if resultado and resultado[0] else 0.00
+
+        # Obtener los datos completos del cliente para edición (incluyendo "Cantidad")
+            cur.execute("""
+                    SELECT Nombre, Apellido, Telefono, Direccion, Referencias, Cantidad 
+                    FROM Clientes 
+                    WHERE idCliente = ?
+                """, (self.id_cliente_seleccionado,))
+            datos_cliente = cur.fetchone()
+
+            self.MostrarDetalleCliente(datos_cliente, saldo_pendiente_total)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error DB", f"Error al obtener el saldo del cliente: {e}")
+
+    # --- 3. FUNCIÓN PARA CONSTRUIR LA INTERFAZ DE CRÉDITO Y EDICIÓN ---
+
+
+    def MostrarDetalleCliente(self, datos_cliente, saldo_pendiente_total):
+    # Limpiar el widget de detalle previo
+        while self.LayoutDetalleCredito.count():
+            child = self.LayoutDetalleCredito.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+    # Se extraen las 6 columnas según el esquema del usuario
+        nombre, apellido, telefono, direccion, referencias, cantidad_real = datos_cliente
+
+    # -------------------- Sección de Edición de Cliente --------------------
+        self.LayoutDetalleCredito.addWidget(QLabel("<hr>"))
+        self.LayoutDetalleCredito.addWidget(QLabel("<b>Modificar Cliente</b>"))
+
+    # Nombre
+        HLayoutNombre = QHBoxLayout()
+        HLayoutNombre.addWidget(QLabel("Nombre:"))
+        self.ENombre = QLineEdit(nombre)
+        HLayoutNombre.addWidget(self.ENombre)
+        self.LayoutDetalleCredito.addLayout(HLayoutNombre)
+
+    # Apellido
+        HLayoutApellido = QHBoxLayout()
+        HLayoutApellido.addWidget(QLabel("Apellido:"))
+        self.EApellido = QLineEdit(apellido)
+        HLayoutApellido.addWidget(self.EApellido)
+        self.LayoutDetalleCredito.addLayout(HLayoutApellido)
+
+    # Teléfono
+        HLayoutTelefono = QHBoxLayout()
+        HLayoutTelefono.addWidget(QLabel("Teléfono:"))
+        self.ETelefono = QLineEdit(telefono)
+        HLayoutTelefono.addWidget(self.ETelefono)
+        self.LayoutDetalleCredito.addLayout(HLayoutTelefono)
+
+    # Direccion
+        HLayoutDireccion = QHBoxLayout()
+        HLayoutDireccion.addWidget(QLabel("Dirección:"))
+        self.EDireccion = QLineEdit(direccion)
+        HLayoutDireccion.addWidget(self.EDireccion)
+        self.LayoutDetalleCredito.addLayout(HLayoutDireccion)
+
+    # Límite de Crédito (Combo Box con valores fijos)
+        HLayoutCantidadReal = QHBoxLayout()
+        HLayoutCantidadReal.addWidget(QLabel("Límite Crédito:"))
+        self.ComboLimiteCredito = QComboBox()
+
+    # Opciones de límite de crédito
+        limites = [0.0, 1000.0, 2000.0, 3000.0, 4000.0, 5000.0, 6000.0, 7000.0, 8000.0, 9000.0, 10000.0]
+
+    # Agregar los límites al ComboBox
+        indice_actual = 0
+        for i, limite in enumerate(limites):
+            texto_limite = f"${limite:.2f}"
+            self.ComboLimiteCredito.addItem(texto_limite, userData=limite)
+
+        # Buscar la cantidad actual para seleccionarla
+            if cantidad_real is not None and abs(cantidad_real - limite) < 0.01:
+                indice_actual = i
+
+        self.ComboLimiteCredito.setCurrentIndex(indice_actual)
+
+        HLayoutCantidadReal.addWidget(self.ComboLimiteCredito)
+        self.LayoutDetalleCredito.addLayout(HLayoutCantidadReal)
+
+    # Referencias (ComboBox de clientes)
+        HLayoutReferencias = QHBoxLayout()
+        HLayoutReferencias.addWidget(QLabel("Referencias:"))
+        self.ComboReferencias = QComboBox()
+
+    # Rellenar el ComboBox con todos los clientes (excepto el que se está editando)
+        try:
+            cur.execute("SELECT Nombre, Apellido FROM Clientes WHERE idCliente != ? ORDER BY Nombre",
+                    (self.id_cliente_seleccionado,))
+            clientes_referencia = cur.fetchall()
+
+            self.ComboReferencias.addItem("--- Sin Referencia ---")  # Opción para no tener referencia
+
+        # Agregar los clientes restantes al ComboBox
+            for nombre_ref, apellido_ref in clientes_referencia:
+                nombre_completo_ref = f"{nombre_ref} {apellido_ref}"
+                self.ComboReferencias.addItem(nombre_completo_ref)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error DB", f"Error al cargar clientes de referencia: {e}")
+
+    # Establecer el valor actual de 'referencias'
+        if referencias:
+            index = self.ComboReferencias.findText(referencias)
+            if index != -1:
+                self.ComboReferencias.setCurrentIndex(index)
+
+        HLayoutReferencias.addWidget(self.ComboReferencias)
+        self.LayoutDetalleCredito.addLayout(HLayoutReferencias)
+
+    # Botón Guardar
+        self.BGuardarCambios = QPushButton("Guardar Cambios del Cliente")
+        self.BGuardarCambios.setStyleSheet("background-color: #4CAF50; color: white;")
+        self.LayoutDetalleCredito.addWidget(self.BGuardarCambios)
+
+    # Conexión del botón de guardar
+        self.BGuardarCambios.clicked.connect(self.ActualizarCliente)
+
+    # -------------------- Sección de Deuda y Pago --------------------
+
+        self.LayoutDetalleCredito.addWidget(QLabel("<hr>"))
+        self.LayoutDetalleCredito.addWidget(QLabel("<b>Gestión de Crédito</b>"))
+
+    # 1. Saldo Pendiente Actual
+        self.LSaldoPendiente = QLabel(
+        f"<b>Saldo Pendiente Total: </b> <font color='red'>${saldo_pendiente_total:.2f}</font>")
+        self.LayoutDetalleCredito.addWidget(self.LSaldoPendiente)
+
+    # 2. Campo de Pago
+        HLayoutPago = QHBoxLayout()
+        HLayoutPago.addWidget(QLabel("Monto a Pagar: $"))
+        self.EPago = QLineEdit()
+        self.EPago.setPlaceholderText("0.00")
+        HLayoutPago.addWidget(self.EPago)
+        self.BRegistrarPago = QPushButton("Registrar Pago")
+        HLayoutPago.addWidget(self.BRegistrarPago)
+
+        self.LayoutDetalleCredito.addLayout(HLayoutPago)
+
+    # Conexión del botón de pago
+        self.BRegistrarPago.clicked.connect(lambda: self.ProcesarPagoCredito(saldo_pendiente_total))
+
+    # Si el saldo es cero, deshabilita el pago
+        if saldo_pendiente_total <= 0:
+            self.BRegistrarPago.setEnabled(False)
+            self.EPago.setEnabled(False)
+            self.LSaldoPendiente.setText("<b>Saldo Pendiente Total: </b> <font color='green'>$0.00</font>")
+            self.LayoutDetalleCredito.addWidget(QLabel("<i>Este cliente no tiene deudas pendientes.</i>"))
+
+    # --- 4. FUNCIÓN PARA PROCESAR EL PAGO Y ACTUALIZAR LA DB ---
+
+
+    def ProcesarPagoCredito(self, saldo_pendiente_total):
+        try:
+            monto_pago = float(self.EPago.text())
+        except ValueError:
+            QMessageBox.warning(self, "Error de Entrada", "Por favor, ingrese un monto numérico válido.")
+            return
+
+        if monto_pago <= 0:
+            QMessageBox.warning(self, "Error de Pago", "El monto a pagar debe ser positivo.")
+            return
+
+        if monto_pago > saldo_pendiente_total:
+            QMessageBox.warning(self, "Error de Pago",
+                            f"El pago (${monto_pago:.2f}) excede el saldo pendiente total (${saldo_pendiente_total:.2f}).")
+            return
+
+    # --- LÓGICA DE APLICACIÓN DE PAGO (FIFO: First-In, First-Out) ---
+        pago_restante = monto_pago
+
+        try:
+        # 1. Obtener todas las deudas pendientes para este cliente, ordenadas por la más antigua (por idVentas)
+            cur.execute("""
+                    SELECT C.idCuentas_Por_Cobrar, C.saldo_pendiente  -- CORREGIDO: Usando idCuentas_Por_Cobrar
+                    FROM Cuentas_Por_Cobrar C
+                    JOIN VENTA V ON C.idVentas = V.idVentas
+                    WHERE V.idCliente = ? AND C.saldo_pendiente > 0
+                    ORDER BY V.idVentas ASC 
+                """, (self.id_cliente_seleccionado,))
+
+            deudas_pendientes = cur.fetchall()
+
+        # CORREGIDO: Usando el nombre de variable idCuentas_Por_Cobrar
+            for idCuentas_Por_Cobrar, saldo_pendiente in deudas_pendientes:
+                if pago_restante <= 0:
+                    break
+
+            # Determinar cuánto del pago cubre esta deuda
+                monto_aplicado = min(pago_restante, saldo_pendiente)
+
+            # 2. Actualizar la tabla Cuentas_Por_Cobrar
+                nuevo_saldo = saldo_pendiente - monto_aplicado
+
+                cur.execute("""
+                        UPDATE Cuentas_Por_Cobrar
+                        SET monto_pagado = monto_pagado + ?, saldo_pendiente = ?
+                        WHERE idCuentas_Por_Cobrar = ?  -- CORREGIDO: Usando idCuentas_Por_Cobrar
+                    """, (monto_aplicado, nuevo_saldo, idCuentas_Por_Cobrar))
+                pago_restante -= monto_aplicado
+            con.commit()
+            QMessageBox.information(self, "Pago Registrado",
+                                f"Se registraron ${monto_pago:.2f} como pago a crédito con éxito.")
+        # Recargar la interfaz de cliente para reflejar el nuevo saldo
+            self.AbriClinete()
+        except Exception as e:
+            con.rollback()
+            QMessageBox.critical(self, "Error DB", f"Error al procesar el pago. Transacción revertida: {e}")
+    def ActualizarCliente(self):
+        nombre = self.ENombre.text().strip()
+        apellido = self.EApellido.text().strip()
+        telefono = self.ETelefono.text().strip()
+        direccion = self.EDireccion.text().strip()
+        referencias = self.ComboReferencias.currentText()
+        if referencias == "--- Sin Referencia ---":
+            referencias = ""
+        limite_credito = self.ComboLimiteCredito.currentData()
+        if not nombre or not apellido:
+            QMessageBox.warning(self, "Datos Incompletos", "El nombre y el apellido son obligatorios.")
+            return
+        try:
+            cur.execute("""
+                    UPDATE Clientes 
+                    SET Nombre = ?, Apellido = ?, Telefono = ?, Direccion = ?, Referencias = ?, Cantidad = ?
+                    WHERE idCliente = ?
+                """, (nombre, apellido, telefono, direccion, referencias, limite_credito, self.id_cliente_seleccionado))
+            con.commit()
+            QMessageBox.information(self, "Actualización Exitosa",
+                                "Los datos del cliente han sido actualizados con éxito.")
+            self.Cliente2()
+            index = self.ComboCliente2.findData(self.id_cliente_seleccionado)
+            if index != -1:
+                self.ComboCliente2.setCurrentIndex(index)
+            self.AbriClinete()
+        except Exception as e:
+            con.rollback()
+            QMessageBox.critical(self, "Error DB", f"Error al actualizar el cliente. Transacción revertida: {e}")
     def Reporte(self):
-        VentanaReporte =QVBoxLayout()
+        VentanaReporte = QVBoxLayout()
         HorizontalRE = QHBoxLayout()
-        LReporte = QLabel("<b>Reporte<b>")
-        LReporte.setFont(QFont("Arial",12))
-        DateReporte =QDateEdit()
-        DateReporte.setCalendarPopup(True)
-        DateReporte.setDate(QDate.currentDate())
-        self.ButtonReporte =QPushButton("Crea Reporte")
-        self.TablaRe = QTableWidget(0,2)
-        self.TablaRe.setHorizontalHeaderLabels(["Fecha","Reporte"])
+        LReporte = QLabel("<b>Reporte</b>")
+        LReporte.setFont(QFont("Arial", 12))
+        self.DateReporte = QDateEdit()
+        self.DateReporte.setCalendarPopup(True)
+        self.DateReporte.setDate(QDate.currentDate())
+        self.ButtonReporte = QPushButton("Crear Reporte")
+        self.ButtonReporte.clicked.connect(self.AgregarReporte)
+        self.TablaRe = QTableWidget(0, 2)
+        self.TablaRe.setHorizontalHeaderLabels(["Fecha", "Reporte"])
+        self.TablaRe.setColumnWidth(0, 150)
+        self.TablaRe.setColumnWidth(1, 300)
+        self.TablaRe.cellClicked.connect(self.AbrirPDFDiario)
         HorizontalRE.addWidget(LReporte)
-        HorizontalRE.addWidget(DateReporte)
+        HorizontalRE.addWidget(self.DateReporte)
         HorizontalRE.addWidget(self.ButtonReporte)
         VentanaReporte.addLayout(HorizontalRE)
         VentanaReporte.addWidget(self.TablaRe)
         self.Widget5.setLayout(VentanaReporte)
-        self.ButtonReporte.clicked.connect(self.AgregarReporte)
+        self.CargarHistorialReportes()
+    def CargarHistorialReportes(self):
+        """
+        Carga todos los archivos PDF del directorio pdf/Reporte en la tabla.
+        """
+        carpeta = "pdf/Reporte"
+        self.TablaRe.setRowCount(0)
+
+        if not os.path.exists(carpeta):
+            os.makedirs(carpeta)
+            return
+
+        archivos = sorted(os.listdir(carpeta), reverse=True)
+
+        for archivo in archivos:
+            if archivo.endswith(".pdf"):
+                fecha = archivo.replace("Reporte_", "").replace(".pdf", "")
+                fila = self.TablaRe.rowCount()
+                self.TablaRe.insertRow(fila)
+                self.TablaRe.setItem(fila, 0, QTableWidgetItem(fecha))
+                self.TablaRe.setItem(fila, 1, QTableWidgetItem(archivo))
+
+        self.TablaRe.resizeColumnsToContents()
     def AgregarReporte(self):
-        Genreral= reporte.GeneralReporte()
+        """
+        Genera un nuevo reporte PDF y actualiza la tabla.
+        """
+        fecha_seleccionada = self.DateReporte.date().toString("yyyy-MM-dd")
+
+        try:
+            datos_reporte = reporte.obtener_datos_reporte(fecha_seleccionada, con)
+            ruta_pdf = reporte.generar_reporte_pdf(datos_reporte)
+
+            QMessageBox.information(self, "PDF Creado",
+                                    f"Reporte guardado en:\n{ruta_pdf}")
+
+            # Actualizamos historial después de crear uno nuevo
+            self.CargarHistorialReportes()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error de Reporte",
+                                 f"Ocurrió un error al generar el reporte:\n{e}")
+    def AbrirPDFDiario(self, row, column):
+        """
+        Abre el PDF seleccionado en la tabla (clic simple en cualquier celda).
+        """
+        try:
+            archivo = self.TablaRe.item(row, 1).text()
+            ruta_completa = os.path.join("pdf/Reporte", archivo)
+
+            if not os.path.exists(ruta_completa):
+                QMessageBox.warning(self, "Archivo no encontrado",
+                                    "El reporte PDF no existe en el directorio.")
+                return
+
+            if os.name == "nt":  # Windows
+                os.startfile(ruta_completa)
+            elif sys.platform == "darwin":  # macOS
+                os.system(f"open '{ruta_completa}'")
+            else:  # Linux
+                os.system(f"xdg-open '{ruta_completa}'")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error al abrir",
+                                 f"No se pudo abrir el archivo PDF:\n{e}")
     def CreaTabla(self): # Esto es para crea toda las tabla de la base de dato
         cur.execute("""Create table if not exists Tipo(idTipo INTEGER PRIMARY KEY AUTOINCREMENT, 
         Tipo Text not null unique)""")
@@ -167,11 +508,16 @@ class Mainwindow(QMainWindow):
         cur.execute("""CREATE TABLE IF NOT EXISTS Detalles_Ventas(idDetalles_Ventas INTEGER PRIMARY KEY AUTOINCREMENT,
         idVentas INTEGER NOT NULL,
         idProducto INTEGER NOT NULL,
-        cantidad NOT NULL,
-        PrecioUnitario NOT NULL,
+        cantidad INTEGER NOT NULL,
+        PrecioUnitario REAL NOT NULL,
         FOREIGN KEY (idVentas) REFERENCES VENTA(idVentas),
         FOREIGN KEY (idProducto) REFERENCES Productos(idProducto));""")
-        #cur.execute()
+        cur.execute("""CREATE TABLE IF NOT EXISTS Cuentas_Por_Cobrar(idCuentas_Por_Cobrar INTEGER PRIMARY KEY AUTOINCREMENT,
+        idVentas INTEGER,
+        monto_credito REAL,
+        monto_pagado REAL,
+        saldo_pendiente REAL,
+        FOREIGN KEY (idVentas) REFERENCES VENTA(idVentas));""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Ropa'); """)
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Bolsa');""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Perfume');""")
@@ -197,8 +543,7 @@ class Mainwindow(QMainWindow):
         #self.Tabla.setRowCount()
         self.Tabla.setHorizontalHeaderLabels(["Imagen","codigo","Nombre","Precios","cantidad","subtotal","Eliminar"])
         Etota =QLabel("Total: ")
-        Etotal =QLabel("<b>$0.00</b>")
-        #Etotal.
+        self.Etotal =QLabel("<b>$0.00</b>")
         EMetodo = QLabel("Metodo de Pago")
         self.ComboMetodo = QComboBox()
         self.ComboMetodo.addItems(["Efectivo","Credito"])
@@ -210,7 +555,7 @@ class Mainwindow(QMainWindow):
         for t in RefClientes2:
             self.ComboCliente.addItem(t[0])
         horizon2.addWidget(Etota)
-        horizon2.addWidget(Etotal)
+        horizon2.addWidget(self.Etotal)
         horizon2.addWidget(EMetodo)
         horizon2.addWidget(self.ComboMetodo)
         horizon2.addWidget(ECliente)
@@ -221,6 +566,7 @@ class Mainwindow(QMainWindow):
         vent_ventas.addWidget(self.ButtonVenta)
         self.Widget.setLayout(vent_ventas)
         self.ButtonVenta.clicked.connect(self.RegristraVentas)
+        self.ButtonAgregar.clicked.connect(self.AgregarCarrito)
     def Compras(self): #esto es la ventana de compra
         vent_Compras = QVBoxLayout()
         HorizontalCom = QHBoxLayout()
@@ -296,6 +642,108 @@ class Mainwindow(QMainWindow):
         vent_Compras.addLayout(HorizontalCom7)
         vent_Compras.addLayout(HorizontalCom8)
         self.Widget1.setLayout(vent_Compras)
+        self.ButtonCom.clicked.connect(self.RegristaCom)
+    def RegristaCom(self):
+        CodigoCom = self.LECodigoCom.text()
+        Nombre = self.lENombreCom.text()
+        Marca = self.LeMarcaCom.text()
+        tipo = self.TipoCom.currentIndex()
+        if self.TipoCom.currentIndex() == 1:
+            Opcion1 = self.ComboDescripcionCom1.currentText()
+            Opcion2 = self.ComboDescripcionCom2.currentText()
+            Opcion3 = self.ComboDescripcionCom3.currentText()
+            Descricion = f"Talla: {Opcion1}, Material: {Opcion2}, Color: {Opcion3}"
+        elif self.TipoCom.currentIndex() == 2:
+            Opcion1 = self.ComboDescripcionCom1.currentText()
+            Opcion2 = self.ComboDescripcionCom2.currentText()
+            Opcion3 = self.ComboDescripcionCom3.currentText()
+            Descricion = f"Modelos: {Opcion1}, Material:  {Opcion2}, Tamaño: {Opcion3}"
+        elif self.TipoCom.currentIndex() == 3:
+            Opcion1 = self.ComboDescripcionCom1.currentText()
+            Opcion2 = self.ComboDescripcionCom2.currentText()
+            Opcion3 = self.ComboDescripcionCom3.currentText()
+            Descricion = f"Aroma: {Opcion1}, Volumen:  {Opcion2}, Concetracion: {Opcion3}"
+        elif self.TipoCom.currentIndex() == 4:
+            Opcion1 = self.ComboDescripcionCom1.currentText()
+            Opcion2 = self.ComboDescripcionCom2.currentText()
+            Opcion3 = self.ComboDescripcionCom3.currentText()
+            Descricion = f"Material: {Opcion1}, Tipo de accesorio:  {Opcion2}, Medida/Ajuste: {Opcion3}"
+        elif self.TipoCom.currentIndex() == 0:
+            print("Seecina otra cosa")
+            QMessageBox.warning(self,"Error de escritura","Por favor seleciona un tipo")
+            return
+        precioCom = float(self.SPrecioComre.text())
+        Strock = int(self.SStrockCom.text())
+        if not (CodigoCom and Nombre and Marca and tipo and precioCom and Strock):
+            QMessageBox.warning(self,"Falta de Datos","Por Favor de llenar los Datos")
+            return
+        print(f"{CodigoCom}, {Nombre}, {Marca}, {tipo}, {Descricion}, {precioCom}, {Strock}")
+        try:
+            cur.execute("""SELECT idProducto,Stock  FROM Productos WHERE Codigo = ?""",(CodigoCom,))
+            dato = cur.fetchone()
+            idProducto = None
+            if dato:
+                idProducto = dato[0]
+                StockA = dato[1]
+                NuevoStock = StockA + Strock
+                fechaActual = date.today().strftime("%Y-%m-%d")
+                TotalCom = precioCom * float(Strock)
+                cur.execute("""
+                               UPDATE Productos
+                               SET Stock = ?, PComra = ?
+                               WHERE idProducto = ?;
+                           """, (NuevoStock, precioCom, idProducto))
+
+                # ✅ Registrar compra y detalle de compra aunque ya exista
+                cur.execute("INSERT INTO COMPRA (Fecha, MontCompra) VALUES (?, ?)", (fechaActual, TotalCom))
+                idCompra = cur.lastrowid
+                cur.execute("""
+                               INSERT INTO Detalles_Compra (idCompra, idProducto, Cantidad, PrecioCom)
+                               VALUES (?, ?, ?, ?)
+                           """, (idCompra, idProducto, Strock, precioCom))
+
+                QMessageBox.information(self, "Producto Existente",
+                                        f"Stock de {CodigoCom} actualizado a {NuevoStock}.")
+            else:
+                cur.execute("""INSERT INTO Productos(Codigo,Nombre,Marca,Tipo,Descripcion,PComra ,Stock ) VALUES(?,?,?,?,?,?,?)""",(CodigoCom,Nombre,Marca,tipo,Descricion,precioCom,Strock))
+                print("Dato actualizados")
+                idProducto  =cur.lastrowid
+                QMessageBox.information(self,"Productos Agregador",f"el Productos fue agregador con codigo {CodigoCom} ")
+                fechaActual = date.today().strftime("%Y-%m-%d")
+                TotalCom = precioCom * float(Strock)
+                cur.execute("""INSERT INTO COMPRA(Fecha,MontCompra) VALUES(?,?)""",(fechaActual,TotalCom))
+                idCompra = cur.lastrowid
+                cur.execute("""INSERT INTO Detalles_Compra(idCompra,idProducto,Cantidad,PrecioCom) VALUES(?,?,?,?)""",(idCompra,idProducto,Strock,precioCom))
+            con.commit()
+        except sqlite3.Error as e:
+            con.rollback()
+            error_message = f"Error de Base de Datos: {e}"
+            self.LEstadoCom.setText(f"Estado: Error en DB")
+            QMessageBox.critical(self, "Error de Base de Datos", error_message)
+        except Exception as e:
+            QMessageBox.critical(self, "Error Inesperado", f"Ocurrió un error inesperado: {e}")
+        cur.execute("select Codigo,UrlImagen,Nombre,Marca,Tipo,Descripcion,PVentas ,PComra,Stock from Productos ")
+        Tabla2 = cur.fetchall()
+        numFila1 = len(Tabla2)
+        self.TablaInvertario.setRowCount(numFila1)
+        for Valorfila1, regristo1 in enumerate(Tabla2):
+            for ValorColumna1, Valoew1 in enumerate(regristo1):
+                if ValorColumna1 == 1:
+                    label = QLabel()
+                    Pixmap = QPixmap(str(Valoew1))
+                    Pixmap = Pixmap.scaled(199, 299)
+                    label.setPixmap(Pixmap)
+                    label.setScaledContents(True)
+                    self.TablaInvertario.setCellWidget(Valorfila1, ValorColumna1, label)
+                else:
+                    tablaValores1 = QTableWidgetItem(str(Valoew1))
+                    self.TablaInvertario.setItem(Valorfila1, ValorColumna1, tablaValores1)
+        self.LECodigoCom.clear()
+        self.lENombreCom.clear()
+        self.LeMarcaCom.clear()
+        self.TipoCom.setCurrentIndex(0)
+        self.SPrecioComre.setValue(0.0)
+        self.SStrockCom.setValue(0)
     def Invectario(self):#esta es la ventana de invertario que mostrara los dato de la tabla Productros
         Vent_Invectstio= QVBoxLayout()
         HorizontaInve1 = QHBoxLayout()#Codigo de Escaneor de barra
@@ -315,7 +763,6 @@ class Mainwindow(QMainWindow):
         self.ButtonFIle= QPushButton("...")#se usada este boton Para Puebla de descagar y modificacion de imagen
         self.ButtonFIle.setFixedSize(21,21)
         self.ButtonFIle.hide()
-        #FileIMagen =QFileDialog()
         HorizontaInve2.addWidget(LImagen)
         HorizontaInve2.addWidget(self.ComboImagen)
         HorizontaInve2.addWidget(self.LineImagen)
@@ -423,24 +870,32 @@ class Mainwindow(QMainWindow):
         self.ComboImagen.setCurrentIndex(0)
     def EliminarInvectario(self):
         CodigoE = self.LNCodigoIn.text()
-        cur.execute("""DELETE FROM Productos WHERE Codigo = ?""",(CodigoE,))
-        con.commit()
-        cur.execute("select Codigo,UrlImagen,Nombre,Marca,Tipo,Descripcion,PVentas ,PComra,Stock from Productos ")
-        Tabla2 = cur.fetchall()
-        numFila1 = len(Tabla2)
-        self.TablaInvertario.setRowCount(numFila1)
-        for Valorfila1, regristo1 in enumerate(Tabla2):
-            for ValorColumna1, Valoew1 in enumerate(regristo1):
-                if ValorColumna1 == 1:
-                    label = QLabel()
-                    Pixmap = QPixmap(str(Valoew1))
-                    Pixmap = Pixmap.scaled(199, 299)
-                    label.setPixmap(Pixmap)
-                    label.setScaledContents(True)
-                    self.TablaInvertario.setCellWidget(Valorfila1, ValorColumna1, label)
-                else:
-                    tablaValores1 = QTableWidgetItem(str(Valoew1))
-                    self.TablaInvertario.setItem(Valorfila1, ValorColumna1, tablaValores1)
+        if not (CodigoE):
+            QMessageBox.warning(self,"Error","Por Favor Pon un codigo de Producto")
+            return 
+        respuesta = QMessageBox.question(self,"Corfimancion",f"Esta seguro de eliminar el Producto {CodigoE}",QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
+        if respuesta == QMessageBox.Yes:
+            cur.execute("""DELETE FROM Productos WHERE Codigo = ?""",(CodigoE,))
+            con.commit()
+            self.LNCodigoIn.clear()
+            cur.execute("select Codigo,UrlImagen,Nombre,Marca,Tipo,Descripcion,PVentas ,PComra,Stock from Productos ")
+            Tabla2 = cur.fetchall()
+            numFila1 = len(Tabla2)
+            self.TablaInvertario.setRowCount(numFila1)
+            for Valorfila1, regristo1 in enumerate(Tabla2):
+                for ValorColumna1, Valoew1 in enumerate(regristo1):
+                    if ValorColumna1 == 1:
+                        label = QLabel()
+                        Pixmap = QPixmap(str(Valoew1))
+                        Pixmap = Pixmap.scaled(199, 299)
+                        label.setPixmap(Pixmap)
+                        label.setScaledContents(True)
+                        self.TablaInvertario.setCellWidget(Valorfila1, ValorColumna1, label)
+                    else:
+                        tablaValores1 = QTableWidgetItem(str(Valoew1))
+                        self.TablaInvertario.setItem(Valorfila1, ValorColumna1, tablaValores1)
+    def ClickTable(self):
+        return
     def FileDialogo(self):
         Archivo = QFileDialog.getOpenFileName(self,"","","Archivos de Imagen (*.PNG *.JPG *.JPEG)")
         RUTA = Archivo[0]
@@ -615,12 +1070,217 @@ class Mainwindow(QMainWindow):
                 tablaValores = QTableWidgetItem(str(Valoew))
                 self.TablaCliente.setItem(Valorfila, ValorColumna, tablaValores)
     def AgregarCarrito(self):
-        pass
+        Articulor = self.LNCodigo.text()
+        Cantidad  = self.SCantidad.value()
+        if not Articulor or Cantidad <= 0:
+            QMessageBox.warning(self,"error","Los campo esta vacio")
+            return 
+        try:
+            cur.execute("""SELECT Nombre, PVentas, Stock, UrlImagen FROM Productos WHERE Codigo = ?""",(Articulor,))
+            articulo = cur.fetchone()
+        except Exception as e:
+            QMessageBox.warning(self,"Error",f"Ocurrio un error en la base de dato:{e}")
+            return
+        if articulo is None:
+            QMessageBox.warning(self,"Articulo",f"No se Encontro producto: {Articulor} ")
+            return
+        nombre, precio, stock, imagen_ruta = articulo
+        ProductoRegristrado =False
+        for row in range(self.Tabla.rowCount()):
+            CodigoA = self.Tabla.item(row,1).text()
+            if CodigoA == Articulor:
+                ProductoRegristrado =True
+                CantidadActual = int(self.Tabla.item(row,4).text())
+                NuevaCantidad = CantidadActual + Cantidad
+                if NuevaCantidad>stock:
+                    QMessageBox.warning(self,"Cantidad","No Hay suficiente productos")
+                    return
+                precioUnitario = self.Tabla.item(row,3).text().replace("$","")
+                precioU= float(precioUnitario)
+                nuevosubtotal=NuevaCantidad*precioU
+                self.Tabla.item(row,4).setText(str(NuevaCantidad))
+                self.Tabla.item(row,5).setText(f"${nuevosubtotal}")
+                break
+        if not ProductoRegristrado:
+            if Cantidad>stock:
+                QMessageBox.warning(self,"Cantidad","No Hay suficiente productos")
+                return
+
+            subtotal = Cantidad*precio
+            fila = self.Tabla.rowCount()
+            self.Tabla.insertRow(fila)
+
+            labelImagen = QLabel()
+            labelImagen.setAlignment(Qt.AlignCenter)
+            if imagen_ruta:
+                Imagenfila = QPixmap(imagen_ruta)
+                if not Imagenfila.isNull():
+                    escalado=Imagenfila.scaled(83, 83, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    labelImagen.setPixmap(escalado)
+                else:
+                    labelImagen.setText("❌ Error")
+            else:
+                labelImagen.setPixmap("No hay imagenes")
+            self.Tabla.setCellWidget(fila,0,labelImagen)
+            self.Tabla.setRowHeight(fila,88)
+            def CrearFila(text):
+                item = QTableWidgetItem(str(text))
+                item.setTextAlignment(Qt.AlignCenter)
+                return item
+            self.Tabla.setItem(fila,1,CrearFila(Articulor))
+            self.Tabla.setItem(fila, 2, CrearFila(nombre))
+            self.Tabla.setItem(fila, 3, CrearFila(f"${precio}"))
+            self.Tabla.setItem(fila, 4, CrearFila(Cantidad))
+            self.Tabla.setItem(fila, 5, CrearFila(f"${subtotal}"))
+            BotonELiminar = QPushButton("X")
+            BotonELiminar.setStyleSheet("background-color: red; color: white;")
+            BotonELiminar.clicked.connect(self.EliminarArticulo)
+            self.Tabla.setCellWidget(fila, 6, BotonELiminar)
+        self.ActulizarprecioVencta()
+        self.LNCodigo.clear()
+        self.SCantidad.setValue(0)
+    def ActulizarprecioVencta(self):
+        total = 0.0
+        for row in range(self.Tabla.rowCount()):
+            subtotalTabla = self.Tabla.item(row,5).text().replace("$","")
+            try:
+                total += float(subtotalTabla)
+            except ValueError:
+                pass
+        try:
+            self.Etotal.setText(f"<b>${total:.2f}</b>")
+        except AttributeError:
+            pass
+    def EliminarArticulo(self):
+        Button = self.sender()
+        if Button and isinstance(Button, QPushButton):
+            index = self.Tabla.indexAt(Button.pos())
+            if index.isValid():
+                row = index.row()
+                self.Tabla.removeRow(row)
+                self.ActulizarprecioVencta()
     def RegristraVentas(self):
-        VentaTicker = Ticket.CreaTicket()
+        if self.Tabla.rowCount() == 0:
+            QMessageBox.warning(self, "Vacio", "NO hay nada que vende")
+            return
+
+            # Obtener datos de la interfaz
+        metodo = self.ComboMetodo.currentText()  # Renombre: metodo_pago -> metodo
+        Cliente = self.ComboCliente.currentText()  # Renombre: cliente_nombre_completo -> Cliente
+
+        # Limpiar y convertir el total a float
+        try:
+            # Se asegura de limpiar el tag <b> también
+            Total = self.Etotal.text().replace("<b>$", "").replace("</b>", "")
+            Totalv = float(Total)  # Renombre: total_venta -> Totalv
+        except ValueError:
+            QMessageBox.critical(self, "Error de Total", "El campo de total contiene un valor no numérico.")
+            return
+
+        clinteid = None  # Renombre: cliente_id -> clinteid
+
+        # 2. Obtener el ID del cliente y verificar requisito de crédito
+        # CORRECCIÓN: Se ajusta la condición para verificar correctamente el "Credito"
+        if metodo == "Credito" and self.ComboCliente.currentIndex() == 0:
+            QMessageBox.critical(self, "Error de Crédito", "Debe seleccionar un cliente para una venta a Crédito.")
+            return
+
+        if self.ComboCliente.currentIndex() > 0:
+            try:
+                # Obtener el idCliente de la tabla Clientes
+                cur.execute("""SELECT idCliente FROM Clientes WHERE Nombre || ' ' || Apellido = ?""", (Cliente,))
+                resultado = cur.fetchone()
+                if resultado:
+                    clinteid = resultado[0]
+                else:
+                    QMessageBox.warning(self, "Cliente no Encontrado",
+                                        f"El cliente '{Cliente}' no se encontró en la base de datos.")
+                    return
+            except Exception as e:
+                QMessageBox.critical(self, "Error DB", f"Error al obtener ID del cliente: {e}")
+                return
+
+        try:
+            # --- PASO 3: Registrar la Venta Principal (Tabla VENTA) ---
+            fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cur.execute("""INSERT INTO VENTA(Fecha,TotalVenta,TipoPago,idCliente) VALUES(?, ?, ?, ?)""",
+                        (fecha_actual, Totalv, metodo, clinteid))
+
+            ventaid = cur.lastrowid  # Renombre: venta_id -> ventaid
+            detalle_ticket = []
+
+            # --- PASO 4 y 5: Procesar Productos, Detalle de Venta y Actualización de Stock ---
+            for row in range(self.Tabla.rowCount()):
+                codigo_producto = self.Tabla.item(row, 1).text()
+                nombre = self.Tabla.item(row, 2).text()
+                precio_unitario = float(self.Tabla.item(row, 3).text().replace('$', ''))
+                cantidad = int(self.Tabla.item(row, 4).text())
+                subtotal = float(self.Tabla.item(row, 5).text().replace('$', ''))
+
+                # CORRECCIÓN: Se corrige la sintaxis SQL de la consulta (faltaba FROM y se duplicaba WHERE)
+                cur.execute("""SELECT idProducto FROM Productos WHERE Codigo = ?""", (codigo_producto,))
+                resultado_producto = cur.fetchone()
+
+                if resultado_producto is None:
+                    raise Exception(f"Producto con código {codigo_producto} no encontrado para detalle de venta.")
+
+                idproducto = resultado_producto[0]  # Renombre: id_producto -> idproducto
+
+                # 4a. Registrar detalle de venta (Tabla Detalles_Ventas)
+                cur.execute("""INSERT INTO Detalles_Ventas (idVentas, idProducto, cantidad, PrecioUnitario) 
+                                  VALUES (?, ?, ?, ?)""", (ventaid, idproducto, cantidad, precio_unitario))
+
+                # 4b. Actualizar Stock (Tabla Productos)
+                cur.execute("UPDATE Productos SET Stock = Stock - ? WHERE Codigo = ?", (cantidad, codigo_producto))
+
+                detalle_ticket.append((nombre, cantidad, precio_unitario, subtotal))
+
+            # --- PASO 6: Manejar Cuentas por Cobrar (Si es Crédito) ---
+            if metodo == "Credito":
+                cur.execute("""INSERT INTO Cuentas_Por_Cobrar (idVentas, monto_credito, monto_pagado, saldo_pendiente)
+                                       VALUES (?, ?, ?, ?)""", (ventaid, Totalv, 0.00, Totalv))
+
+            # CORRECCIÓN: Se usa cur.connection.commit() para ser consistente con el cursor
+            cur.connection.commit()
+
+            # --- PASO 7: Generar el Recibo ---
+            rutaTicket = CreaTicket(ventaid, metodo, Cliente, Totalv,
+                                    detalle_ticket)  # Renombre: ruta_ticket -> rutaTicket
+            try:
+                sistema = platform.system()
+                if sistema == "Windows":
+                    # Intenta abrir el archivo con el programa predeterminado
+                    os.startfile(rutaTicket)
+                elif sistema == "Darwin":  # macOS
+                    subprocess.Popen(['open', rutaTicket])
+                else:  # Linux y otros (usa xdg-open)
+                    subprocess.Popen(['xdg-open', rutaTicket])
+            # --- PASO 8: Mensaje de Éxito (Actualizado con nuevos nombres de variables) ---
+
+                QMessageBox.information(self, "Venta Exitosa",
+                                    f"Venta #{ventaid} registrada con éxito.\nTotal: ${Totalv:.2f}\nRecibo generado en: {rutaTicket}")
+            except Exception as open_error:
+                # Si la apertura falla, solo avisa que se guardó.
+                QMessageBox.warning(self, "Error al Abrir Ticket",
+                                    f"El ticket se guardó en: {rutaTicket}, pero no se pudo abrir automáticamente. Por favor, ábralo manualmente. Error: {open_error}")
+            # --- PASO 9: Limpiar la Interfaz ---
+            self.Tabla.setRowCount(0)
+            self.Etotal.setText("<b>$0.00</b>")
+            self.ComboMetodo.setCurrentIndex(0)
+            self.ComboCliente.setCurrentIndex(0)
+            self.LNCodigo.clear()
+            self.SCantidad.setValue(0)
+
+        except Exception as e:
+            cur.connection.rollback()
+            QMessageBox.critical(self, "Error de Venta", f"No se pudo completar la venta. Transacción revertida: {e}")
     def CambioDEscricion(self):
         self.ComboDescripcionCom1.clear()
+        self.ComboDescripcionCom2.clear()
+        self.ComboDescripcionCom3.clear()
         self.LDescripcionCom1.clear()
+        self.LDescripcionCom2.clear()
+        self.LDescripcionCom3.clear()
         if self.TipoCom.currentText() == "Ropa":
             self.LDescripcionCom1.setText("Tallar: ")
             self.ComboDescripcionCom1.addItems(["CH","M","G","ExG"])
@@ -629,21 +1289,31 @@ class Mainwindow(QMainWindow):
             self.LDescripcionCom3.setText("Color: ")
             self.ComboDescripcionCom3.addItems(["Blanco","Negro","Gris","Beige","Azul","Verde","Rojo","Rosa","Amarillo","Morado","Multi Color"])
         elif self.TipoCom.currentText() =="Bolsa":
-            self.LDescripcionCom1.setText("Material: ")
-            self.ComboDescripcionCom2.addItems(["CH", "M", "G", "ExG"])
+            self.LDescripcionCom1.setText("Modelo: ")
+            self.ComboDescripcionCom1.addItems(["Tote", "Hobo", "Bandolera", "Mochila", "Clutch", "Crossbody"])
+            self.LDescripcionCom2.setText("Material: ")
+            self.ComboDescripcionCom2.addItems(["Piel", "Tela", "Algodón", "Yute", "Nylon", "Sintético"])
+            self.LDescripcionCom3.setText("Tamaño: ")
             self.ComboDescripcionCom3.addItems(["CH", "M", "G", "ExG"])
-            self.ComboDescripcionCom1.addItems(["piel", "tela", "Algodón", "Yute"])
         elif self.TipoCom.currentText() =="Perfume":
-            self.LDescripcionCom1.setText("Material: ")
-            self.ComboDescripcionCom2.addItems(["CH", "M", "G", "ExG"])
-            self.ComboDescripcionCom3.addItems(["CH", "M", "G", "ExG"])
-            self.ComboDescripcionCom1.addItems(["piel", "tela", "Algodón", "Yute"])
+            self.LDescripcionCom1.setText("Aroma: ")
+            self.ComboDescripcionCom1.addItems(["Floral", "Amaderado", "Cítrico", "Oriental"," Fougère","Acuático"])
+            self.LDescripcionCom2.setText("Volumen(ml): ")
+            self.ComboDescripcionCom2.addItems(["30ml", "50ml", "75ml", "100ml","125ml"])
+            self.LDescripcionCom3.setText("Concentración: ")
+            self.ComboDescripcionCom3.addItems(["Agua de colonia (EdC)", "Agua de colonia (EdT)", "Agua de perfume (EdP)", "Perfume"])
         elif self.TipoCom.currentText() =="Accesorios":
             self.LDescripcionCom1.setText("Material: ")
             self.ComboDescripcionCom1.addItems(["Oro", "Lata", "Cobre", "Bronze"])
-            self.ComboDescripcionCom2.addItems(["piel", "tela", "Algodón", "Yute"])
-            self.ComboDescripcionCom3.addItems(["CH", "M", "G", "ExG"])
-
+            self.LDescripcionCom2.setText("Tipo de Accesorio: ")
+            self.ComboDescripcionCom2.addItems(["Collar", "Anillo", "Pulsera", "Aretes","Bufanda","Cinturón","Lentes"])
+            self.LDescripcionCom3.setText("Medida / Ajuste: ")
+            self.ComboDescripcionCom3.addItems(["Ajustable", "Individual", " S/M", "L/XL","60cm","Anillo"])
+    def resource_path(relative_path):
+        base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
+        return os.path.join(base_path, relative_path)
+    ruta_logo = resource_path("Imagen/logo.png")
+    ruta_logo2 = resource_path("Imagen/logo2.png")
 app = QApplication(sys.argv)
 app.setWindowIcon(QIcon("Imagen/logo2.png"))
 window = Mainwindow()

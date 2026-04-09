@@ -50,6 +50,19 @@ class Mainwindow(QMainWindow):
         self.Clientes()
         self.Cliente2()
         self.Reporte()
+        self.setStyleSheet("""
+        QPushButton{
+        background-color: #2c3e50;
+        color : white;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        border-radius: 15px; /* Esto da el efecto redondeado suave */
+        padding: 8px 16px;
+        border: none;}
+        QPushButton:hover{
+        background-color:#e67e22;}
+        QPushButton:pressed{
+        background-color:#d35400}""")
     def DescargaImagen(self):#sirve para descarga imagenes de internet  desde una url.
         FileImagen="Imagen/Download"
         os.makedirs(FileImagen,exist_ok=True)

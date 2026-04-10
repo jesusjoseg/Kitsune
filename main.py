@@ -62,7 +62,13 @@ class Mainwindow(QMainWindow):
         QPushButton:hover{
             background-color:#e67e22;}
         QPushButton:pressed{
-            background-color:#d35400}""")
+            background-color:#d35400}
+        QLineEdit, QComboBox,QDoubleSpinBox,QDateEdit{
+            border:2px solid #bdc3c7;
+            border-radius:10px;
+            padding:5px;
+            background-color: #ffffff;
+            selection-background-color:#e67e22;}""")
     def DescargaImagen(self):#sirve para descarga imagenes de internet  desde una url.
         FileImagen="Imagen/Download"
         os.makedirs(FileImagen,exist_ok=True)

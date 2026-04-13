@@ -19,7 +19,6 @@ from Ticket import CreaTicket
 import platform
 import subprocess
 
-
 class Mainwindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -124,7 +123,6 @@ class Mainwindow(QMainWindow):
                 print ("Descargado imagene")
         except requests.exceptions.RequestException as e:
             print(f"Error en la descarga de imagagen {e}")
-
     def Cliente2(self):
         # Contenedor principal de la ventana de gestión de clientes
         ventanaCliente = QVBoxLayout()
@@ -198,10 +196,7 @@ class Mainwindow(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error DB", f"Error al obtener el saldo del cliente: {e}")
-
     # --- 3. FUNCIÓN PARA CONSTRUIR LA INTERFAZ DE CRÉDITO Y EDICIÓN ---
-
-
     def MostrarDetalleCliente(self, datos_cliente, saldo_pendiente_total):
     # Limpiar el widget de detalle previo
         while self.LayoutDetalleCredito.count():
@@ -326,10 +321,7 @@ class Mainwindow(QMainWindow):
             self.EPago.setEnabled(False)
             self.LSaldoPendiente.setText("<b>Saldo Pendiente Total: </b> <font color='green'>$0.00</font>")
             self.LayoutDetalleCredito.addWidget(QLabel("<i>Este cliente no tiene deudas pendientes.</i>"))
-
     # --- 4. FUNCIÓN PARA PROCESAR EL PAGO Y ACTUALIZAR LA DB ---
-
-
     def ProcesarPagoCredito(self, saldo_pendiente_total):
         try:
             monto_pago = float(self.EPago.text())

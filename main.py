@@ -242,7 +242,7 @@ class Mainwindow(QMainWindow):
         HLayoutCantidadReal.addWidget(QLabel("Límite Crédito:"))
         self.ComboLimiteCredito = QComboBox()
     # Opciones de límite de crédito
-        limites = [0.0,500.0,1000.0,1500.0, 2000.0,2500.0, 3000.0,3500.0, 4000.0, 5000.0, 6000.0, 7000.0, 8000.0, 9000.0, 10000.0]
+        limites = [0.0,500.0,1000.0,1500.0, 2000.0,2500.0, 3000.0,3500.0, 4000.0,4500.0, 5000.0,5500.0, 6000.0,6500.0, 7000.0,7500.0, 8000.0,8500.0, 9000.0,9500.0, 10000.0]
     # Agregar los límites al ComboBox
         indice_actual = 0
         for i, limite in enumerate(limites):
@@ -1028,8 +1028,7 @@ class Mainwindow(QMainWindow):
         self.Cantida.setCurrentIndex(0)
         self.Cantida.addItem("Elegir Cantida")
         self.Cantida.addItems(
-            ["$2,000.00", "$3,000.00", "$4,000.00", "$5,000.00", "$6,000.00", "$7,000.00", "$8,000.00", "$9,000.00",
-             "$10,000.00"])
+            ["$0.0","$500.0","$1000.0","$1500.0", "$2000.0","$2500.0", "3000.0","$3500.0", "$4000.0","$4500.0", "$5000.0","$5500.0", "$6000.0","$6500.0", "$7000.0","$7500.0", "$8000.0","$8500.0", "$9000.0","$9500.0"," $10000.0"])
         HorizontalCliente6.addWidget(LCantidaC)
         HorizontalCliente6.addWidget(self.Cantida)
         Etiquetas = QLabel("<b>Regristo de clientes</b>")

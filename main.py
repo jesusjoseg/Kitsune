@@ -80,6 +80,19 @@ class Mainwindow(QMainWindow):
             padding: 5px;
             border: 1px solid #34495e;
             font-weight: bold;
+        }
+        QTabBar::tab{
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            padding: 10px 20px;
+            margin-right: 2px;
+            border-top-left-radius:10px;
+            border-top-right-radius:10px;
+        }
+        QTabBar::tab:selected{
+            background:#e67e22;
+            color: white;
+            border-bottom:none;
         }""")
     def DescargaImagen(self):#sirve para descarga imagenes de internet  desde una url.
         FileImagen="Imagen/Download"

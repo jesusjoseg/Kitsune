@@ -242,7 +242,7 @@ class Mainwindow(QMainWindow):
         HLayoutCantidadReal.addWidget(QLabel("Límite Crédito:"))
         self.ComboLimiteCredito = QComboBox()
     # Opciones de límite de crédito
-        limites = [0.0,500.0,1000.0,1500.0, 2000.0,2500.0, 3000.0, 4000.0, 5000.0, 6000.0, 7000.0, 8000.0, 9000.0, 10000.0]
+        limites = [0.0,500.0,1000.0,1500.0, 2000.0,2500.0, 3000.0,3500.0, 4000.0, 5000.0, 6000.0, 7000.0, 8000.0, 9000.0, 10000.0]
     # Agregar los límites al ComboBox
         indice_actual = 0
         for i, limite in enumerate(limites):

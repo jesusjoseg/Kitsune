@@ -208,14 +208,11 @@ class Mainwindow(QMainWindow):
             child = self.LayoutDetalleCredito.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
-
     # Se extraen las 6 columnas según el esquema del usuario
         nombre, apellido, telefono, direccion, referencias, cantidad_real = datos_cliente
-
     # -------------------- Sección de Edición de Cliente --------------------
         self.LayoutDetalleCredito.addWidget(QLabel("<hr>"))
         self.LayoutDetalleCredito.addWidget(QLabel("<b>Modificar Cliente</b>"))
-
     # Nombre
         HLayoutNombre = QHBoxLayout()
         HLayoutNombre.addWidget(QLabel("Nombre:"))

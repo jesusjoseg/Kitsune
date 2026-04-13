@@ -34,7 +34,7 @@ class Mainwindow(QMainWindow):
         self.Widget5 = QWidget()
         #self.setStyleSheet("QLabel {color: white}")
         layout = QVBoxLayout()
-        self.setWindowTitle("Sistema de Gestión Comercial con Integración a Plataformas de Comercio Electrónico para Cuka's Boutique y Belleza")
+        self.setWindowTitle("Kitsune - POS")
         self.setGeometry(100,100,800,640)
         self.setLayout(layout)
         self.tab.addTab(self.Widget,"Ventas")
@@ -68,7 +68,19 @@ class Mainwindow(QMainWindow):
             border-radius:10px;
             padding:5px;
             background-color: #ffffff;
-            selection-background-color:#e67e22;}""")
+            selection-background-color:#e67e22;}
+        QTableWidget{
+            gridline-color: #ecf0f1;
+            border: 1px solid #dcdde1;
+            border-radius:8px;
+        }
+        QHeaderView::section{
+            background-color: #2c3e50;
+            color: white;
+            padding: 5px;
+            border: 1px solid #34495e;
+            font-weight: bold;
+        }""")
     def DescargaImagen(self):#sirve para descarga imagenes de internet  desde una url.
         FileImagen="Imagen/Download"
         os.makedirs(FileImagen,exist_ok=True)

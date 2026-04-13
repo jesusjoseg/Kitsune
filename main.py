@@ -219,36 +219,30 @@ class Mainwindow(QMainWindow):
         self.ENombre = QLineEdit(nombre)
         HLayoutNombre.addWidget(self.ENombre)
         self.LayoutDetalleCredito.addLayout(HLayoutNombre)
-
     # Apellido
         HLayoutApellido = QHBoxLayout()
         HLayoutApellido.addWidget(QLabel("Apellido:"))
         self.EApellido = QLineEdit(apellido)
         HLayoutApellido.addWidget(self.EApellido)
         self.LayoutDetalleCredito.addLayout(HLayoutApellido)
-
     # Teléfono
         HLayoutTelefono = QHBoxLayout()
         HLayoutTelefono.addWidget(QLabel("Teléfono:"))
         self.ETelefono = QLineEdit(telefono)
         HLayoutTelefono.addWidget(self.ETelefono)
         self.LayoutDetalleCredito.addLayout(HLayoutTelefono)
-
     # Direccion
         HLayoutDireccion = QHBoxLayout()
         HLayoutDireccion.addWidget(QLabel("Dirección:"))
         self.EDireccion = QLineEdit(direccion)
         HLayoutDireccion.addWidget(self.EDireccion)
         self.LayoutDetalleCredito.addLayout(HLayoutDireccion)
-
     # Límite de Crédito (Combo Box con valores fijos)
         HLayoutCantidadReal = QHBoxLayout()
         HLayoutCantidadReal.addWidget(QLabel("Límite Crédito:"))
         self.ComboLimiteCredito = QComboBox()
-
     # Opciones de límite de crédito
-        limites = [0.0, 1000.0, 2000.0, 3000.0, 4000.0, 5000.0, 6000.0, 7000.0, 8000.0, 9000.0, 10000.0]
-
+        limites = [0.0,500.0,1000.0, 2000.0, 3000.0, 4000.0, 5000.0, 6000.0, 7000.0, 8000.0, 9000.0, 10000.0]
     # Agregar los límites al ComboBox
         indice_actual = 0
         for i, limite in enumerate(limites):

@@ -23,8 +23,8 @@ class Apertura(QMainWindow):
         self.BotonAper.clicked.connect(self.Aceptar)
         layout.addWidget(self.BotonAper)
 
-    def Aceptar(self):
+    def guardar_y_cerrar(self):
         if self.Txt_nombre.text() == "":
             QMessageBox.warning(self,"Antecion","Ponle un Nombre a tu Negocio")
             return
-        self
+        self.Aceptar()

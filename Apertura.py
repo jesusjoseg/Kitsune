@@ -28,3 +28,6 @@ class Apertura(QMainWindow):
             QMessageBox.warning(self,"Antecion","Ponle un Nombre a tu Negocio")
             return
         self.Aceptar()
+    def Aceptar(self):
+        nombre = self.Txt_nombre.text()
+        cbx_rubro = self.cbx_rubro.currentText()

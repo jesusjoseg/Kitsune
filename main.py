@@ -10,6 +10,9 @@ from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWind
                              QFileDialog,QDateEdit,QTableWidgetItem,QMessageBox)
 import sys
 import os
+
+from jupyterlab_server import app
+
 from Conexion import con,cur
 from PIL import Image
 import mimetypes
@@ -18,7 +21,7 @@ from datetime import datetime, date
 from Ticket import CreaTicket
 import platform
 import subprocess
-
+from Apertura import Apertura
 class Mainwindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -1338,8 +1341,8 @@ class Mainwindow(QMainWindow):
         return os.path.join(base_path, relative_path)
     ruta_logo = resource_path("Imagen/logo.png")
     ruta_logo2 = resource_path("Imagen/logo2.png")
-app = QApplication(sys.argv)
-app.setWindowIcon(QIcon("Imagen/logo2.png"))
-window = Mainwindow()
-window.show()
-sys.exit(app.exec())
+if __name__=="__main__":
+    app =QApplication(sys.argv)
+    ventanaConfi= Apertura()
+    ventanaConfi.show()
+    sys.exit(app.exec_())

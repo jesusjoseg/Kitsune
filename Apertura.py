@@ -1,5 +1,5 @@
 from PyQt5 import QtCore,QtGui
-from PyQt5.QtWidgets import (QMainWindow,QVBoxLayout,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox)
+from PyQt5.QtWidgets import (QMainWindow,QVBoxLayout,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox,QWidget)
 
 class Apertura(QMainWindow):
     def __init__(self):
@@ -7,7 +7,9 @@ class Apertura(QMainWindow):
         self.setWindowTitle("Configuración Inicial - Kitsune")
         self.setFixedSize(400,500)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-        layout = QVBoxLayout()
+        self.Widget= QWidget()
+        self.setCentralWidget(self.Widget)
+        layout = QVBoxLayout(self.Widget)
 
         self.label = QLabel("<h2>¡Bienvenido a Kitsune!</h2>")
         self.Txt_nombre=QLineEdit()

@@ -10,9 +10,6 @@ from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWind
                              QFileDialog,QDateEdit,QTableWidgetItem,QMessageBox)
 import sys
 import os
-
-from jupyterlab_server import app
-
 from Conexion import con,cur
 from PIL import Image
 import mimetypes

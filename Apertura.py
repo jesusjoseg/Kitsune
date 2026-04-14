@@ -22,7 +22,7 @@ class Apertura(QMainWindow):
         layout.addSpacing(20)
         self.BotonAper =QPushButton("Aceptar")
         self.BotonAper.setFixedHeight(40)
-        self.BotonAper.clicked.connect(self.Aceptar)
+        self.BotonAper.clicked.connect(self.guardar_y_cerrar)
         layout.addWidget(self.BotonAper)
 
     def guardar_y_cerrar(self):

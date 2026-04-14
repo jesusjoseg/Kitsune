@@ -1,5 +1,5 @@
 from PyQt5 import QtCore,QtGui
-from PyQt5.QtWidgets import (QMainWindow,QVBoxLayout,QLabel,QLineEdit,QComboBox,QPushButton)
+from PyQt5.QtWidgets import (QMainWindow,QVBoxLayout,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox)
 
 class Apertura(QMainWindow):
     def __init__(self):
@@ -18,3 +18,13 @@ class Apertura(QMainWindow):
         self.cbx_rubro.addItems(["Abarrotes","Boutique","Farmacia","Ferreteria","Otro"])
         layout.addWidget(self.cbx_rubro)
         layout.addSpacing(20)
+        self.BotonAper =QPushButton("Aceptar")
+        self.BotonAper.setFixedHeight(40)
+        self.BotonAper.clicked.connect(self.Aceptar)
+        layout.addWidget(self.BotonAper)
+
+    def Aceptar(self):
+        if self.Txt_nombre.text() == "":
+            QMessageBox.warning(self,"Antecion","Ponle un Nombre a tu Negocio")
+            return
+        self

@@ -543,6 +543,12 @@ class Mainwindow(QMainWindow):
         monto_pagado REAL,
         saldo_pendiente REAL,
         FOREIGN KEY (idVentas) REFERENCES VENTA(idVentas));""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS Contenido_tipo(id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       tipo integer NOT NULL,
+                       Descripcion1 Text,
+                       Descripcion2 Text,
+                       Descripcion3 Text,
+                       FOREIGN KEY tipo REFERENCES Tipo(idTipo));""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Ropa'); """)
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Bolsa');""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Perfume');""")

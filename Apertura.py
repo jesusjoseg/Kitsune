@@ -12,7 +12,15 @@ class Apertura(QMainWindow):
         self.Widget= QWidget()
         self.setCentralWidget(self.Widget)
         layout = QVBoxLayout(self.Widget)
-
+        cur.execute("""create TABLE if not EXISTS Configuracion
+        (id primary key CHECK(id=1),
+            Nombre Text,
+            Direcion Text,
+            Telefono Text,
+            RFC TEXT,
+            Ruta_Logo Text,
+            Mensaje_Agradecimiento text);""")
+        con.commit()
         self.label = QLabel("<h2>¡Bienvenido a Kitsune!</h2>")
         layout.addWidget(self.label)
         self.Txt_nombre=QLineEdit()

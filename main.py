@@ -549,6 +549,7 @@ class Mainwindow(QMainWindow):
                        Descripcion2 Text,
                        Descripcion3 Text,
                        FOREIGN KEY (tipo) REFERENCES Tipo(idTipo));""")
+
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Ropa'); """)
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Bolsa');""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Perfume');""")
@@ -1347,7 +1348,7 @@ class Mainwindow(QMainWindow):
 if __name__=="__main__":
     app = QApplication(sys.argv)
     try:
-        cur.execute("""SELECT COUNT(*) FROM Tipo""")
+        cur.execute("""SELECT COUNT(*) FROM Configuracion""")
         HayTipo= cur.fetchone()[0]
     except Exception as e:
         print(f"no hay database{e}")

@@ -10,6 +10,9 @@ from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWind
                              QFileDialog,QDateEdit,QTableWidgetItem,QMessageBox)
 import sys
 import os
+
+from fontTools.misc.cython import returns
+
 from Conexion import con,cur
 from PIL import Image
 import mimetypes
@@ -1339,7 +1342,11 @@ class Mainwindow(QMainWindow):
     ruta_logo = resource_path("Imagen/logo.png")
     ruta_logo2 = resource_path("Imagen/logo2.png")
 if __name__=="__main__":
-    app =QApplication(sys.argv)
-    ventanaConfi= Apertura()
-    ventanaConfi.show()
-    sys.exit(app.exec_())
+    app = QApplication(sys.argv)
+    if 1+1:
+        ventanaConfi = Apertura()
+        ventanaConfi.show()
+    else:
+        Ventana =Mainwindow()
+        Ventana.show()
+sys.exit(app.exec_())

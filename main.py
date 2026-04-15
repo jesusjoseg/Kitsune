@@ -548,7 +548,7 @@ class Mainwindow(QMainWindow):
                        Descripcion1 Text,
                        Descripcion2 Text,
                        Descripcion3 Text,
-                       FOREIGN KEY tipo REFERENCES Tipo(idTipo));""")
+                       FOREIGN KEY (tipo) REFERENCES Tipo(idTipo));""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Ropa'); """)
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Bolsa');""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Perfume');""")
@@ -1346,7 +1346,13 @@ class Mainwindow(QMainWindow):
     ruta_logo2 = resource_path("Imagen/logo2.png")
 if __name__=="__main__":
     app = QApplication(sys.argv)
-    if 1+1:
+    try:
+        cur.execute("""SELECT COUNT(*) FROM Tipo""")
+        HayTipo= cur.fetchone()[0]
+    except Exception as e:
+        print(f"no hay database{e}")
+        HayTipo = 0
+    if HayTipo==0:
         ventanaConfi = Apertura()
         ventanaConfi.show()
     else:

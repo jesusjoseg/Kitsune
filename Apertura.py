@@ -1,6 +1,6 @@
 from PyQt5 import QtCore,QtGui
 from PyQt5.QtWidgets import (QMainWindow,QVBoxLayout,QFileDialog,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox,QWidget)
-from sympy import false
+from Conexion import con,cur
 
 
 class Apertura(QMainWindow):
@@ -70,4 +70,4 @@ class Apertura(QMainWindow):
             self.Nueva_ventana.show()
             self.close()
         except Exception as e:
-            QMessageBox.warning(self,"",f"{e}")
+            QMessageBox.critical(self,"",f"{e}")

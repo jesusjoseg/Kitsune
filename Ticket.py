@@ -26,7 +26,7 @@ def CreaTicket(ventaid,metodo,Cleinte,totalventa,detalleTicket):
    c.drawCentredString(TicketAncho/2,Linea,f"{datosEmpresa}")
    Linea-= 4 * mm
    c.setFont("Helvetica",8)
-   cur.execute("""SELECT Nombre
+   cur.execute("""SELECT Direcion
                   FROM Configuracion;""")
    Resultado = cur.fetchone()
    datosDirecion = Resultado[0] if Resultado else "Empresa"

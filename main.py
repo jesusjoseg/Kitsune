@@ -18,22 +18,25 @@ from datetime import datetime, date
 from Ticket import CreaTicket
 import platform
 import subprocess
-from Apertura import Apertura
 class Mainwindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.tab = QTabWidget()
         #self.setStyleSheet("background-color: black")#  #este codigo es ara cambia el color de background
         self.setCentralWidget(self.tab)
+        Bar =self.menuBar()
+        file = Bar.addMenu("File")
+        file.addAction("New")
         self.Widget = QWidget()
         self.Widget1 = QWidget()
         self.Widget2 = QWidget()
         self.Widget3 = QWidget()
         self.Widget4 = QWidget()
         self.Widget5 = QWidget()
-        #self.setStyleSheet("QLabel {color: white}")
         layout = QVBoxLayout()
-        self.setWindowTitle("Kitsune - POS")
+        cur.execute("SELECT Nombre FROM Configuracion WHERE id = 1")
+        datos = cur.fetchone()
+        self.setWindowTitle(f"Kitsune - POS De {datos[0]}")
         self.setGeometry(100,100,800,640)
         self.setLayout(layout)
         self.tab.addTab(self.Widget,"Ventas")
@@ -165,6 +168,11 @@ class Mainwindow(QMainWindow):
 
         self.Widget4.setLayout(ventanaCliente)
         self.BuscarCliente.clicked.connect(self.AbriClinete)
+    def Configuracion(self):
+        from Apertura import Apertura
+        ventanaConfi = Apertura()
+        ventanaConfi.show()
+
     def AbriClinete(self):
         self.id_cliente_seleccionado = self.ComboCliente2.currentData()
         if self.id_cliente_seleccionado is None:
@@ -493,7 +501,11 @@ class Mainwindow(QMainWindow):
                                  f"No se pudo abrir el archivo PDF:\n{e}")
     def CreaTabla(self): # Esto es para crea toda las tabla de la base de dato
         cur.execute("""Create table if not exists Tipo(idTipo INTEGER PRIMARY KEY AUTOINCREMENT, 
-        Tipo Text not null unique)""")
+        Tipo Text not null unique,
+        Descripcion1 Text,
+        Descripcion2 Text,
+        Descripcion3 Text
+        )""")
         cur.execute("""Create TABLE IF NOT EXISTS Clientes(idCliente INTEGER PRIMARY KEY AUTOINCREMENT,
          Nombre Text not null,
          Apellido Text not null,
@@ -1345,18 +1357,28 @@ class Mainwindow(QMainWindow):
         return os.path.join(base_path, relative_path)
     ruta_logo = resource_path("Imagen/logo.png")
     ruta_logo2 = resource_path("Imagen/logo2.png")
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     try:
-        cur.execute("""SELECT COUNT(*) FROM Configuracion""")
-        HayTipo= cur.fetchone()[0]
+        # Verificamos si ya hay datos de la empresa
+        cur.execute("SELECT COUNT(*) FROM Configuracion")
+        config_existe = cur.fetchone()[0]
+
+        if config_existe > 0:
+            ventana = Mainwindow()
+        else:
+            from Apertura import Apertura
+
+            ventana = Apertura()
+
+        ventana.show()
+        sys.exit(app.exec_())
     except Exception as e:
-        print(f"no hay database{e}")
-        HayTipo = 0
-    if HayTipo==0:
-        ventanaConfi = Apertura()
-        ventanaConfi.show()
-    else:
-        Ventana =Mainwindow()
-        Ventana.show()
-sys.exit(app.exec_())
+        # Si la tabla ni siquiera existe, mandamos a Apertura
+        from Apertura import Apertura
+
+        ventana = Apertura()
+        ventana.show()
+        sys.exit(app.exec_())

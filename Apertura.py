@@ -1,6 +1,8 @@
 from PyQt5 import QtCore,QtGui
-from PyQt5.QtWidgets import (QMainWindow,QVBoxLayout,QFileDialog,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox,QWidget)
+from PyQt5.QtWidgets import (QApplication,QMainWindow,QVBoxLayout,QFileDialog,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox,QWidget)
 from Conexion import con,cur
+
+
 
 
 class Apertura(QMainWindow):
@@ -37,7 +39,10 @@ class Apertura(QMainWindow):
         layout.addWidget(self.Rfc)
         self.Logo=QPushButton("Logo de tu Empresa")
         self.LogoText=QLineEdit()
-        self.LogoText.isModified()
+        self.LogoText.setReadOnly(True)
+        self.Mensaje = QLineEdit()
+        self.Mensaje.setPlaceholderText("Mensaje Para Ticket")
+        layout.addWidget(self.Mensaje)
         layout.addWidget(self.Logo)
         layout.addWidget(self.LogoText)
         layout.addWidget(QLabel("El giro de Negocio:"))
@@ -62,6 +67,7 @@ class Apertura(QMainWindow):
 
         self.BotonAper.clicked.connect(self.guardar_y_cerrar)
         layout.addWidget(self.BotonAper)
+        self.Logo.clicked.connect(self.Cargar_Logo)
 
     def guardar_y_cerrar(self):
         if self.Txt_nombre.text() == "":
@@ -70,12 +76,31 @@ class Apertura(QMainWindow):
         self.Aceptar()
     def Aceptar(self):
         nombre = self.Txt_nombre.text()
-        cbx_rubro = self.cbx_rubro.currentText()
-
+        Direccion = self.Direcion.text()
+        Telefono = self.Telefono.text()
+        Rfc = self.Rfc.text()
+        ruta_logo = self.LogoText.text()
+        mensaje = self.Mensaje.text()
         try:
+            cur.execute("""
+            INSERT OR REPLACE INTO Configuracion
+            (id,Nombre,Direcion,Telefono,RFC,Ruta_Logo,Mensaje_Agradecimiento)
+             VALUES(1,?,?,?,?,?,?)""",(nombre,Direccion,Telefono,Rfc,ruta_logo,mensaje))
+            con.commit()
             from main import Mainwindow
             self.Nueva_ventana=Mainwindow()
             self.Nueva_ventana.show()
             self.close()
         except Exception as e:
-            QMessageBox.critical(self,"",f"{e}")
+            QMessageBox.critical(self,"Error en la base de dato",f"no se pudo guardar:{e}")
+    def Cargar_Logo(self):
+        ruta, _ =QFileDialog.getOpenFileName(self, "Seleccionar Logo", "", "Imágenes (*.png *.jpg)")
+        if ruta !="":
+            self.LogoText.setText(ruta)
+if __name__ == "__main__":
+    import sys
+    # Esto es lo que crea la 'app' que te falta
+    app_kitsune = QApplication(sys.argv)
+    ventana = Apertura()
+    ventana.show()
+    sys.exit(app_kitsune.exec_())

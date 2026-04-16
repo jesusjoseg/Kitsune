@@ -81,7 +81,11 @@ def CreaTicket(ventaid,metodo,Cleinte,totalventa,detalleTicket):
    c.drawString(25 * mm, Linea, f"Metodo de Pago: {metodo}")
    Linea-= 7 * mm
    c.setFont('Helvetica-Bold', 7)
-   c.drawCentredString(TicketAncho/2,Linea,"¡Gracias por su compra!")
+   cur.execute("""SELECT Mensaje_Agradecimiento
+                  FROM Configuracion;""")
+   Resultado = cur.fetchone()
+   datosMensaje = Resultado[0] if Resultado else "Empresa"
+   c.drawCentredString(TicketAncho/2,Linea,f"¡{datosMensaje}!")
    Linea-= 3 * mm
    c.drawCentredString(TicketAncho / 2, Linea, "Conserve este recibo para cualquier aclaración.=^.w.^=")
    c.showPage()

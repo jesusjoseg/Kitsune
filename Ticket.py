@@ -4,6 +4,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from datetime import datetime
 import os
+from Conexion import con,cur
 
 def CreaTicket(ventaid,metodo,Cleinte,totalventa,detalleTicket):
    TicketAncho = 81 *mm
@@ -18,16 +19,33 @@ def CreaTicket(ventaid,metodo,Cleinte,totalventa,detalleTicket):
    c = canvas.Canvas(Nombre,pagesize=(TicketAncho,TicketAlto))
    Linea = TicketAlto - 5 * mm
    c.setFont('Helvetica-Bold', 10)
-   c.drawCentredString(TicketAncho/2,Linea,"Cuka´s Boutique y Belleza")
+   cur.execute("""SELECT Nombre
+                  FROM Configuracion;""")
+   Resultado = cur.fetchone()
+   datosEmpresa = Resultado[0] if Resultado else "Empresa"
+   c.drawCentredString(TicketAncho/2,Linea,f"{datosEmpresa}")
    Linea-= 4 * mm
    c.setFont("Helvetica",8)
-   c.drawCentredString(TicketAncho/2,Linea,"Francisco I. Madero 222, Baca, 33898")
+   cur.execute("""SELECT Nombre
+                  FROM Configuracion;""")
+   Resultado = cur.fetchone()
+   datosDirecion = Resultado[0] if Resultado else "Empresa"
+   c.drawCentredString(TicketAncho/2,Linea,f"{datosDirecion}")
    Linea -= 3 * mm
+
    c.drawCentredString(TicketAncho / 2, Linea, "Hidalgo del Parral, Chih.")
    Linea -= 3 * mm
-   c.drawCentredString(TicketAncho / 2, Linea, "Tel: 6271066876")
+   cur.execute("""SELECT Telefono
+                  FROM Configuracion;""")
+   Resultado = cur.fetchone()
+   datosTelefono = Resultado[0] if Resultado else "Empresa"
+   c.drawCentredString(TicketAncho / 2, Linea, f"Tel: {datosTelefono}")
    Linea -= 3 * mm
-   c.drawCentredString(TicketAncho/2,Linea,"RFC: CATB780409HN1")
+   cur.execute("""SELECT RFC
+                  FROM Configuracion;""")
+   Resultado = cur.fetchone()
+   datosRFC = Resultado[0] if Resultado else "Empresa"
+   c.drawCentredString(TicketAncho/2,Linea,f"RFC: {datosRFC}")
    Linea-= 3 * mm
    c.drawCentredString(TicketAncho / 2, Linea, "________________________________________")
    Linea -= 4 * mm

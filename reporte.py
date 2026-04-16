@@ -93,6 +93,7 @@ def generar_reporte_pdf(datos_reporte):
     Genera un PDF usando los detalles y totales calculados,
     con un encabezado que incluye una imagen junto al título.
     """
+    from Conexion import cur,con
     fecha_str = datos_reporte["fecha"]
 
     Reportedir = "pdf/Reporte"
@@ -110,14 +111,20 @@ def generar_reporte_pdf(datos_reporte):
     # ENCABEZADO CON IMAGEN Y TÍTULO
     # ----------------------------------------
     # Ruta de la imagen del logo (asegúrate de que exista)
-    ruta_logo = "Imagen/logo.png"  # Ejemplo: archivo dentro de la carpeta del script
+    cur.execute("""SELECT Ruta_Logo
+                   FROM Configuracion;""")
+    Logo = cur.fetchone()
+    ImagenLogo=Logo[0] if Logo else "Imagen/logo.png"
+    ruta_logo = f"{ImagenLogo}"  # Ejemplo: archivo dentro de la carpeta del script
 
     if os.path.exists(ruta_logo):
         logo = Image(ruta_logo, width=1.0 * inch, height=1.0 * inch)
     else:
         logo = Paragraph("<b>[LOGO]</b>", styles['Normal'])  # Por si no hay imagen
-
-    titulo = Paragraph("<b>REPORTE DIARIO DE Cuka´s Boutique y Belleza</b>", styles['Title'])
+    cur.execute("""SELECT Nombre FROM Configuracion;""")
+    Resultado= cur.fetchone()
+    datosEmpresa= Resultado[0] if Resultado else "Empresa"
+    titulo = Paragraph(f"<b>REPORTE DIARIO DE {datosEmpresa}</b>", styles['Title'])
 
     # Usamos una tabla para colocar imagen y texto uno al lado del otro
     encabezado = Table([[logo, titulo]], colWidths=[1.2 * inch, 5.8 * inch])

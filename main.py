@@ -25,8 +25,10 @@ class Mainwindow(QMainWindow):
         #self.setStyleSheet("background-color: black")#  #este codigo es ara cambia el color de background
         self.setCentralWidget(self.tab)
         Bar =self.menuBar()
-        file = Bar.addMenu("File")
-        file.addAction("New")
+        file = Bar.addMenu("Archivos")
+        file.addAction("Exporta .db")
+        file.addAction("Importa .db")
+        Configuracion = Bar.addMenu("Configuracion")
         self.Widget = QWidget()
         self.Widget1 = QWidget()
         self.Widget2 = QWidget()

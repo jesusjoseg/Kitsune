@@ -699,6 +699,7 @@ class Mainwindow(QMainWindow):
         CodigoCom = self.LECodigoCom.text()
         Nombre = self.lENombreCom.text()
         Marca = self.LeMarcaCom.text()
+        imagenProducto ="Imagen/Default.jpg"
         tipo = self.TipoCom.currentIndex()
         if self.TipoCom.currentIndex() == 1:
             Opcion1 = self.ComboDescripcionCom1.currentText()
@@ -725,6 +726,7 @@ class Mainwindow(QMainWindow):
             QMessageBox.warning(self,"Error de escritura","Por favor seleciona un tipo")
             return
         precioCom = float(self.SPrecioComre.text())
+        PVenta =precioCom
         Strock = int(self.SStrockCom.text())
         if not (CodigoCom and Nombre and Marca and tipo and precioCom and Strock):
             QMessageBox.warning(self,"Falta de Datos","Por Favor de llenar los Datos")
@@ -757,7 +759,7 @@ class Mainwindow(QMainWindow):
                 QMessageBox.information(self, "Producto Existente",
                                         f"Stock de {CodigoCom} actualizado a {NuevoStock}.")
             else:
-                cur.execute("""INSERT INTO Productos(Codigo,Nombre,Marca,Tipo,Descripcion,PComra ,Stock ) VALUES(?,?,?,?,?,?,?)""",(CodigoCom,Nombre,Marca,tipo,Descricion,precioCom,Strock))
+                cur.execute("""INSERT INTO Productos(Codigo,Nombre,Marca,Tipo,Descripcion,PComra ,Stock,UrlImagen ,PVentas) VALUES(?,?,?,?,?,?,?,?,?)""",(CodigoCom,Nombre,Marca,tipo,Descricion,precioCom,Strock,imagenProducto,PVenta))
                 print("Dato actualizados")
                 idProducto  =cur.lastrowid
                 QMessageBox.information(self,"Productos Agregador",f"el Productos fue agregador con codigo {CodigoCom} ")

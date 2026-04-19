@@ -7,7 +7,7 @@ from PyQt5.QtGui import QIcon,QFont,QPixmap
 from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWindow,
                              QVBoxLayout,QHBoxLayout,QTabWidget,QMenuBar ,QComboBox,
                              QLineEdit,QTableWidget,QSpinBox,QDoubleSpinBox,
-                             QFileDialog,QDateEdit,QTableWidgetItem,QMessageBox)
+                             QFileDialog,QHeaderView,QDateEdit,QTableWidgetItem,QMessageBox)
 import sys
 import os
 from Conexion import con,cur
@@ -905,6 +905,8 @@ class Mainwindow(QMainWindow):
         Tabla2 = cur.fetchall()
         numFila1 = len(Tabla2)
         self.TablaInvertario.setRowCount(numFila1)
+        self.TablaInvertario.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.TablaInvertario.verticalHeader().setDefaultSectionSize(65)
         for Valorfila1, regristo1 in enumerate(Tabla2):
             for ValorColumna1, Valoew1 in enumerate(regristo1):
                 if ValorColumna1 ==1 :
@@ -916,6 +918,7 @@ class Mainwindow(QMainWindow):
                     self.TablaInvertario.setCellWidget(Valorfila1,ValorColumna1,label)
                 else:
                     tablaValores1 = QTableWidgetItem(str(Valoew1))
+
                     self.TablaInvertario.setItem(Valorfila1, ValorColumna1, tablaValores1)
         Vent_Invectstio.addLayout(HorizontaInve1)
         Vent_Invectstio.addLayout(HorizontaInve2)

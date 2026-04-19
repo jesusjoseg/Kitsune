@@ -34,7 +34,8 @@ class Mainwindow(QMainWindow):
         TemasClaro=Temas.addAction("Tema Claro")
         ayuda = Bar.addMenu("Ayuda")
         ayuda.addAction("Ayuda")
-        ayuda.addAction("Arcecar Sobre...")
+        acerca=ayuda.addAction("Arcecar Sobre...")
+        acerca.triggered.connect(self.MostraAcerca)
         self.Widget = QWidget()
         self.Widget1 = QWidget()
         self.Widget2 = QWidget()
@@ -180,7 +181,21 @@ class Mainwindow(QMainWindow):
         from Apertura import Apertura
         ventanaConfi = Apertura()
         ventanaConfi.show()
-
+    def MostraAcerca(self):
+        mensaja="""<div style='text-align: center;'>
+    <h2 style='color: #E67E22;'>Kitsune POS v.8</h2>
+    <p><b>El zorro inteligente para tu negocio</b></p>
+    <hr>
+    <p>Desarrollado con orgullo en <b>Hidalgo del Parral, Chihuahua</b>.</p>
+    <p style='text-align: justify;'>
+        Kitsune es una herramienta ágil diseñada para adaptarse a cualquier rubro comercial. 
+        Optimiza tus ventas, el control de inventarios y gestiona eficientemente los 
+        sistemas de crédito en tu tienda.
+    </p>
+    <p><i>"Agilidad en cada venta, precisión en cada dato."</i></p>
+    <p>🦊 <b>=^.w.^=</b></p>
+</div>"""
+        QMessageBox.about(self,"Acerca de Kitsune POS",mensaja)
     def AbriClinete(self):
         self.id_cliente_seleccionado = self.ComboCliente2.currentData()
         if self.id_cliente_seleccionado is None:

@@ -875,7 +875,8 @@ class Mainwindow(QMainWindow):
         #Aqui Va la tabla de todo los productos
         self.TablaInvertario =QTableWidget(0,9)
         self.TablaInvertario.setHorizontalHeaderLabels(["Codigo","Imagen","Nombre","Marca","Tipo","Descripcion","Precio Venta","Precio Compra","Stock"])
-        cur.execute("select Codigo,UrlImagen,Nombre,Marca,Tipo,Descripcion,PVentas ,PComra,Stock from Productos ")
+        cur.execute("""SELECT p.Codigo, p.UrlImagen, p.Nombre, p.Marca, t.Tipo, p.Descripcion, p.PVentas, p.PComra, p.Stock 
+                       FROM Productos p INNER JOIN Tipo t ON p.Tipo = t.idTipo ;""")
         Tabla2 = cur.fetchall()
         numFila1 = len(Tabla2)
         self.TablaInvertario.setRowCount(numFila1)
@@ -907,6 +908,36 @@ class Mainwindow(QMainWindow):
         self.ButtonActulizar.clicked.connect(self.Actulizarproducto)
         self.ButtonNuevo.clicked.connect(self.LimpiezaInvectario)
         self.ButtonEliminar.clicked.connect(self.EliminarInvectario)
+        self.TablaInvertario.cellClicked.connect(self.ActulizaFormulario)
+    def ActulizaFormulario(self,fila,columna):
+        try:
+            Codigo=self.TablaInvertario.item(fila,0).text()
+            Nombre=self.TablaInvertario.item(fila,2).text()
+            Marca=self.TablaInvertario.item(fila,3).text()
+            Tipo =self.TablaInvertario.item(fila,4).text()
+            TablaTipo=self.TablaInvertario.item(fila,4).text().strip()
+            Descripcion=self.TablaInvertario.item(fila,5).text()
+            PrecioVen=self.TablaInvertario.item(fila,6).text()
+            PrecioCom=self.TablaInvertario.item(fila,7).text()
+            Stock=self.TablaInvertario.item(fila,8).text()
+            self.LNCodigoIn.setText(Codigo)
+            self.LENombreIn.setText(Nombre)
+            self.LEMarca.setText(Marca)
+            index = self.ComboTipo.findText(Tipo, Qt.MatchExactly | Qt.MatchFixedString)
+            if index >= 0:
+                self.ComboTipo.setCurrentIndex(index)
+            else:
+                print(f"DEBUG: No se encontró el tipo '{TablaTipo}' en el combo")
+                # Opcional: intentar una búsqueda parcial si la exacta falla
+                index_parcial = self.ComboTipo.findText(TablaTipo, Qt.MatchContains)
+                if index_parcial >= 0:
+                    self.ComboTipo.setCurrentIndex(index_parcial)
+            self.LDescripcionInve.setText(Descripcion)
+            self.SRecioVEnta.setValue(float(PrecioVen))
+            self.SrecioComra.setValue(float(PrecioCom))
+            self.SStrock.setValue(int(Stock))
+        except Exception as e:
+            print(f"Error a carga dato:{e}")
     def LimpiezaInvectario(self):
         self.LNCodigoIn.clear()
         self.LENombreIn.clear()
@@ -932,7 +963,8 @@ class Mainwindow(QMainWindow):
             cur.execute("""DELETE FROM Productos WHERE Codigo = ?""",(CodigoE,))
             con.commit()
             self.LNCodigoIn.clear()
-            cur.execute("select Codigo,UrlImagen,Nombre,Marca,Tipo,Descripcion,PVentas ,PComra,Stock from Productos ")
+            cur.execute("""SELECT p.Codigo, p.UrlImagen, p.Nombre, p.Marca, t.Tipo, p.Descripcion, p.PVentas, p.PComra, p.Stock 
+                       FROM Productos p INNER JOIN Tipo t ON p.Tipo = t.idTipo ;""")
             Tabla2 = cur.fetchall()
             numFila1 = len(Tabla2)
             self.TablaInvertario.setRowCount(numFila1)
@@ -991,7 +1023,8 @@ class Mainwindow(QMainWindow):
         Stock = self.SStrock.text()
         cur.execute("""UPDATE Productos SET Nombre = ? , UrlImagen = ?,Marca = ?, Tipo = ?,Descripcion = ?,PVentas = ?,PComra = ? ,Stock = ? WHERE Codigo = ?;""",(NombreAct,UrlImagen,Marca,Tipo,Descripcion,PVentas,PComra,Stock ,CodigoImagen))
         con.commit()
-        cur.execute("select Codigo,UrlImagen,Nombre,Marca,Tipo,Descripcion,PVentas ,PComra,Stock from Productos ")
+        cur.execute("""SELECT p.Codigo, p.UrlImagen, p.Nombre, p.Marca, t.Tipo, p.Descripcion, p.PVentas, p.PComra, p.Stock 
+                       FROM Productos p INNER JOIN Tipo t ON p.Tipo = t.idTipo ;""")
         Tabla2 = cur.fetchall()
         numFila1 = len(Tabla2)
         self.TablaInvertario.setRowCount(numFila1)

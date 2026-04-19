@@ -776,7 +776,17 @@ class Mainwindow(QMainWindow):
             QMessageBox.critical(self, "Error de Base de Datos", error_message)
         except Exception as e:
             QMessageBox.critical(self, "Error Inesperado", f"Ocurrió un error inesperado: {e}")
-        cur.execute("select Codigo,UrlImagen,Nombre,Marca,Tipo,Descripcion,PVentas ,PComra,Stock from Productos ")
+        cur.execute("""SELECT p.Codigo,
+                              p.UrlImagen,
+                              p.Nombre,
+                              p.Marca,
+                              t.Tipo,
+                              p.Descripcion,
+                              p.PVentas,
+                              p.PComra,
+                              p.Stock
+                       FROM Productos p
+                                INNER JOIN Tipo t ON p.Tipo = t.idTipo;""")
         Tabla2 = cur.fetchall()
         numFila1 = len(Tabla2)
         self.TablaInvertario.setRowCount(numFila1)
@@ -1356,6 +1366,33 @@ class Mainwindow(QMainWindow):
             self.ComboCliente.setCurrentIndex(0)
             self.LNCodigo.clear()
             self.SCantidad.setValue(0)
+
+            cur.execute("""SELECT p.Codigo,
+                                  p.UrlImagen,
+                                  p.Nombre,
+                                  p.Marca,
+                                  t.Tipo,
+                                  p.Descripcion,
+                                  p.PVentas,
+                                  p.PComra,
+                                  p.Stock
+                           FROM Productos p
+                                    INNER JOIN Tipo t ON p.Tipo = t.idTipo;""")
+            Tabla2 = cur.fetchall()
+            numFila1 = len(Tabla2)
+            self.TablaInvertario.setRowCount(numFila1)
+            for Valorfila1, regristo1 in enumerate(Tabla2):
+                for ValorColumna1, Valoew1 in enumerate(regristo1):
+                    if ValorColumna1 == 1:
+                        label = QLabel()
+                        Pixmap = QPixmap(str(Valoew1))
+                        Pixmap = Pixmap.scaled(199, 299)
+                        label.setPixmap(Pixmap)
+                        label.setScaledContents(True)
+                        self.TablaInvertario.setCellWidget(Valorfila1, ValorColumna1, label)
+                    else:
+                        tablaValores1 = QTableWidgetItem(str(Valoew1))
+                        self.TablaInvertario.setItem(Valorfila1, ValorColumna1, tablaValores1)
 
         except Exception as e:
             cur.connection.rollback()

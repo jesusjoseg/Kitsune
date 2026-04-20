@@ -33,8 +33,9 @@ class Mainwindow(QMainWindow):
         TemasOscuro=Temas.addAction("Tema Oscuro")
         TemasClaro=Temas.addAction("Tema Claro")
         ayuda = Bar.addMenu("Ayuda")
-        ayuda.addAction("Ayuda")
+        help=ayuda.addAction("Ayuda")
         acerca=ayuda.addAction("Arcecar Sobre...")
+        help.triggered.connect(self.Ayuda2)
         acerca.triggered.connect(self.MostraAcerca)
         self.Widget = QWidget()
         self.Widget1 = QWidget()
@@ -196,6 +197,49 @@ class Mainwindow(QMainWindow):
     <p>🦊 <b>=^.w.^=</b></p>
 </div>"""
         QMessageBox.about(self,"Acerca de Kitsune POS",mensaja)
+    def Ayuda2(self):
+        mensaje = """
+            <div style='font-family: Arial; line-height: 1.5;'>
+                <h2 style='color: #D35400; text-align: center;'>Centro de Ayuda Kitsune POS</h2>
+                <hr>
+
+                <h3 style='color: #2E86C1;'>1. Inventario y Semáforo</h3>
+                <p>
+                    • <b>Colores de Stock:</b> <span style='color: red;'>Rojo</span> (Crítico 0-3), 
+                    <span style='color: #D4AC0D;'>Naranja</span> (Bajo 4-10), 
+                    <span style='color: green;'>Verde</span> (Suficiente +10).<br>
+                    • <b>Actualizar:</b> Haga clic en cualquier fila de la tabla para cargar los datos automáticamente al formulario superior.
+                </p>
+
+                <h3 style='color: #2E86C1;'>2. Ventas y Cobro</h3>
+                <p>
+                    • <b>Escaneo:</b> Coloque el cursor en el campo 'Código' y use el escáner. El producto se agregará a la lista.<br>
+                    • <b>Tickets:</b> Al finalizar la venta, el sistema genera un ticket automático y descuenta el stock del inventario.
+                </p>
+
+                <h3 style='color: #2E86C1;'>3. Reportes Retroactivos</h3>
+                <p>
+                    • Si olvidó cerrar caja, puede ir a la sección de <b>Reportes</b>, seleccionar la fecha del día anterior y generar el resumen de ventas.
+                </p>
+
+                <h3 style='color: #2E86C1;'>4. Soporte Local</h3>
+                <p>
+                    • Para fallas técnicas o licencias, contacte al soporte en <b>Hidalgo del Parral</b>. 
+                    Recuerde que esta es la versión <b>v0.8</b>.
+                </p>
+
+                <div style='text-align: center; background-color: #F4F6F7; padding: 10px;'>
+                    <i>"Astucia y rapidez para tu negocio"</i><br>
+                    <b>🦊 Kitsune Software</b>
+                </div>
+            </div>
+            """
+        # Usamos un tamaño de caja más grande para que se lea bien en la TV
+        ayuda_dialog = QMessageBox(self)
+        ayuda_dialog.setWindowTitle("Manual de Uso - Kitsune")
+        ayuda_dialog.setText(mensaje)
+        ayuda_dialog.setStyleSheet("QLabel{min-width: 500px;}")  # Para que no se vea amontonado
+        ayuda_dialog.exec_()
     def AbriClinete(self):
         self.id_cliente_seleccionado = self.ComboCliente2.currentData()
         if self.id_cliente_seleccionado is None:
@@ -908,6 +952,7 @@ class Mainwindow(QMainWindow):
         self.TablaInvertario.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.TablaInvertario.verticalHeader().setDefaultSectionSize(65)
         for Valorfila1, regristo1 in enumerate(Tabla2):
+            valorActual = regristo1[8]
             for ValorColumna1, Valoew1 in enumerate(regristo1):
                 if ValorColumna1 ==1 :
                     label =QLabel()
@@ -918,6 +963,13 @@ class Mainwindow(QMainWindow):
                     self.TablaInvertario.setCellWidget(Valorfila1,ValorColumna1,label)
                 else:
                     tablaValores1 = QTableWidgetItem(str(Valoew1))
+                    if ValorColumna1 == 8:
+                        if valorActual <=3:
+                            tablaValores1.setBackground(Qt.red)
+                            tablaValores1.setForeground(Qt.white)
+                        elif valorActual <=10:
+                            tablaValores1.setBackground(Qt.yellow)
+                            tablaValores1.setForeground(Qt.black)
 
                     self.TablaInvertario.setItem(Valorfila1, ValorColumna1, tablaValores1)
         Vent_Invectstio.addLayout(HorizontaInve1)
@@ -1068,6 +1120,13 @@ class Mainwindow(QMainWindow):
                 else:
                     tablaValores1 = QTableWidgetItem(str(Valoew1))
                     self.TablaInvertario.setItem(Valorfila1, ValorColumna1, tablaValores1)
+        self.LENombreIn.clear()
+        self.LEMarca.clear()  # Antes era LEMarcaIn (error)
+        self.LDescripcionInve.clear()
+        self.SRecioVEnta.setValue(0)
+        self.SrecioComra.setValue(0)  # Antes era SRecioComra (error)
+        self.SStrock.setValue(0)
+        self.LNCodigoIn.clear()
     def Clientes(self):#este es la ventana de regristro de cliente
         RegCliente= QVBoxLayout()
         HorizontalCliente1 =QHBoxLayout()
@@ -1416,40 +1475,23 @@ class Mainwindow(QMainWindow):
             cur.connection.rollback()
             QMessageBox.critical(self, "Error de Venta", f"No se pudo completar la venta. Transacción revertida: {e}")
     def CambioDEscricion(self):
-        self.ComboDescripcionCom1.clear()
-        self.ComboDescripcionCom2.clear()
-        self.ComboDescripcionCom3.clear()
-        self.LDescripcionCom1.clear()
-        self.LDescripcionCom2.clear()
-        self.LDescripcionCom3.clear()
-        if self.TipoCom.currentText() == "Ropa":
-            self.LDescripcionCom1.setText("Tallar: ")
-            self.ComboDescripcionCom1.addItems(["CH","M","G","ExG"])
-            self.LDescripcionCom2.setText("Material: ")
-            self.ComboDescripcionCom2.addItems(["Algondon","Seda","Poliéster","Lana","Nylon","Elastano","Rayón","Denim","Franela","Terciopelo","Gabardina"])
-            self.LDescripcionCom3.setText("Color: ")
-            self.ComboDescripcionCom3.addItems(["Blanco","Negro","Gris","Beige","Azul","Verde","Rojo","Rosa","Amarillo","Morado","Multi Color"])
-        elif self.TipoCom.currentText() =="Bolsa":
-            self.LDescripcionCom1.setText("Modelo: ")
-            self.ComboDescripcionCom1.addItems(["Tote", "Hobo", "Bandolera", "Mochila", "Clutch", "Crossbody"])
-            self.LDescripcionCom2.setText("Material: ")
-            self.ComboDescripcionCom2.addItems(["Piel", "Tela", "Algodón", "Yute", "Nylon", "Sintético"])
-            self.LDescripcionCom3.setText("Tamaño: ")
-            self.ComboDescripcionCom3.addItems(["CH", "M", "G", "ExG"])
-        elif self.TipoCom.currentText() =="Perfume":
-            self.LDescripcionCom1.setText("Aroma: ")
-            self.ComboDescripcionCom1.addItems(["Floral", "Amaderado", "Cítrico", "Oriental"," Fougère","Acuático"])
-            self.LDescripcionCom2.setText("Volumen(ml): ")
-            self.ComboDescripcionCom2.addItems(["30ml", "50ml", "75ml", "100ml","125ml"])
-            self.LDescripcionCom3.setText("Concentración: ")
-            self.ComboDescripcionCom3.addItems(["Agua de colonia (EdC)", "Agua de colonia (EdT)", "Agua de perfume (EdP)", "Perfume"])
-        elif self.TipoCom.currentText() =="Accesorios":
-            self.LDescripcionCom1.setText("Material: ")
-            self.ComboDescripcionCom1.addItems(["Oro", "Lata", "Cobre", "Bronze"])
-            self.LDescripcionCom2.setText("Tipo de Accesorio: ")
-            self.ComboDescripcionCom2.addItems(["Collar", "Anillo", "Pulsera", "Aretes","Bufanda","Cinturón","Lentes"])
-            self.LDescripcionCom3.setText("Medida / Ajuste: ")
-            self.ComboDescripcionCom3.addItems(["Ajustable", "Individual", " S/M", "L/XL","60cm","Anillo"])
+        combos=[self.ComboDescripcionCom1,self.ComboDescripcionCom2,self.ComboDescripcionCom3]
+        label=[self.LDescripcionCom1,self.LDescripcionCom2,self.LDescripcionCom3]
+        for c in combos: c.clear()
+        for l in label: l.clear()
+        tipo_txt=self.TipoCom.currentText()
+        if tipo_txt == "Seleciona Tipo":
+            return
+        try:
+            cur.execute("""SELECT idTipo,Tipo,Descripcion1,Descripcion2,Descripcion3 FROM Tipo WHERE Tipo= ?""",(tipo_txt,))
+            info_tipo = cur.fetchone()
+            if info_tipo:
+                id_tipo = info_tipo[0]
+                self.LDescripcionCom1.setText(f"{info_tipo[1]}")
+                self.LDescripcionCom2.setText(f"{info_tipo[2]}")
+                self.LDescripcionCom3.setText(f"{info_tipo[3]}")
+        except Exception as e:
+            print(f"{e}")
     def resource_path(relative_path):
         base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
         return os.path.join(base_path, relative_path)

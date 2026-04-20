@@ -628,7 +628,8 @@ class Mainwindow(QMainWindow):
                        Descripcion2 Text,
                        Descripcion3 Text,
                        FOREIGN KEY (tipo) REFERENCES Tipo(idTipo));""")
-
+        cur.execute("""CREATE TABLE IF NOT EXISTS Mercado(Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       Mercado TEXT NOT NULL);""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Ropa'); """)
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Bolsa');""")
         cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Perfume');""")
@@ -760,30 +761,22 @@ class Mainwindow(QMainWindow):
         Marca = self.LeMarcaCom.text()
         imagenProducto ="Imagen/Default.jpg"
         tipo = self.TipoCom.currentIndex()
-        if self.TipoCom.currentIndex() == 1:
-            Opcion1 = self.ComboDescripcionCom1.currentText()
-            Opcion2 = self.ComboDescripcionCom2.currentText()
-            Opcion3 = self.ComboDescripcionCom3.currentText()
-            Descricion = f"Talla: {Opcion1}, Material: {Opcion2}, Color: {Opcion3}"
-        elif self.TipoCom.currentIndex() == 2:
-            Opcion1 = self.ComboDescripcionCom1.currentText()
-            Opcion2 = self.ComboDescripcionCom2.currentText()
-            Opcion3 = self.ComboDescripcionCom3.currentText()
-            Descricion = f"Modelos: {Opcion1}, Material:  {Opcion2}, Tamaño: {Opcion3}"
-        elif self.TipoCom.currentIndex() == 3:
-            Opcion1 = self.ComboDescripcionCom1.currentText()
-            Opcion2 = self.ComboDescripcionCom2.currentText()
-            Opcion3 = self.ComboDescripcionCom3.currentText()
-            Descricion = f"Aroma: {Opcion1}, Volumen:  {Opcion2}, Concetracion: {Opcion3}"
-        elif self.TipoCom.currentIndex() == 4:
-            Opcion1 = self.ComboDescripcionCom1.currentText()
-            Opcion2 = self.ComboDescripcionCom2.currentText()
-            Opcion3 = self.ComboDescripcionCom3.currentText()
-            Descricion = f"Material: {Opcion1}, Tipo de accesorio:  {Opcion2}, Medida/Ajuste: {Opcion3}"
-        elif self.TipoCom.currentIndex() == 0:
-            print("Seecina otra cosa")
-            QMessageBox.warning(self,"Error de escritura","Por favor seleciona un tipo")
+        tipoText= self.TipoCom.currentText()
+        if tipo==0 or tipoText=="Selecciona tipo":
+            QMessageBox.warning(self,"Error","por favor de seleciona un tipo")
             return
+        try:
+            cur.execute("""SELECT Descripcion1,Descripcion2,Descripcion3 FROM Tipo WHERE Tipo=?""",(tipoText,))
+            Nombre_desc =cur.fetchone()
+            if Nombre_desc:
+                op1=self.ComboDescripcionCom1.currentText()
+                op2=self.ComboDescripcionCom2.currentText()
+                op3=self.ComboDescripcionCom3.currentText()
+                Descricion=f"{Nombre_desc[0]}: {op1},{Nombre_desc[1]}: {op2},{Nombre_desc[2]}: {op3}"
+            else:
+                Descricion="No hay Descripcion"
+        except Exception as e:
+            print(e)
         precioCom = float(self.SPrecioComre.text())
         PVenta =precioCom
         Strock = int(self.SStrockCom.text())
@@ -1483,13 +1476,22 @@ class Mainwindow(QMainWindow):
         if tipo_txt == "Seleciona Tipo":
             return
         try:
-            cur.execute("""SELECT idTipo,Tipo,Descripcion1,Descripcion2,Descripcion3 FROM Tipo WHERE Tipo= ?""",(tipo_txt,))
+            cur.execute("""SELECT idTipo,Descripcion1,Descripcion2,Descripcion3 FROM Tipo WHERE Tipo= ?""",(tipo_txt,))
             info_tipo = cur.fetchone()
             if info_tipo:
                 id_tipo = info_tipo[0]
                 self.LDescripcionCom1.setText(f"{info_tipo[1]}")
                 self.LDescripcionCom2.setText(f"{info_tipo[2]}")
                 self.LDescripcionCom3.setText(f"{info_tipo[3]}")
+                cur.execute("""SELECT Descripcion1,Descripcion2,Descripcion3 From Contenido_tipo where Tipo =?""",(id_tipo,))
+                opciones= cur.fetchall()
+                lista1= sorted(list(set([str(row[0]) for row in opciones if row[0]])))
+                lista2 = sorted(list(set([str(row[1]) for row in opciones if row[1]])))
+                lista3 = sorted(list(set([str(row[2]) for row in opciones if row[2]])))
+
+                self.ComboDescripcionCom1.addItems(lista1)
+                self.ComboDescripcionCom2.addItems(lista2)
+                self.ComboDescripcionCom3.addItems(lista3)
         except Exception as e:
             print(f"{e}")
     def resource_path(relative_path):

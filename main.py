@@ -10,6 +10,8 @@ from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWind
                              QFileDialog,QHeaderView,QDateEdit,QTableWidgetItem,QMessageBox)
 import sys
 import os
+
+import TipoDatabase
 from Conexion import con,cur
 from PIL import Image
 import mimetypes
@@ -18,6 +20,7 @@ from datetime import datetime, date
 from Ticket import CreaTicket
 import platform
 import subprocess
+from TipoDatabase import InicializaccioDb
 class Mainwindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -56,6 +59,7 @@ class Mainwindow(QMainWindow):
         self.tab.addTab(self.Widget4,"Clientes")
         self.tab.addTab(self.Widget5, "Reporte")
         self.CreaTabla()
+        self.agregadato= TipoDatabase.InicializaccioDb()
         self.venta()
         self.Compras()
         self.Invectario()
@@ -630,10 +634,12 @@ class Mainwindow(QMainWindow):
                        FOREIGN KEY (tipo) REFERENCES Tipo(idTipo));""")
         cur.execute("""CREATE TABLE IF NOT EXISTS Mercado(Id INTEGER PRIMARY KEY AUTOINCREMENT,
                        Mercado TEXT NOT NULL);""")
-        cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Ropa'); """)
-        cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Bolsa');""")
-        cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Perfume');""")
-        cur.execute("""INSERT OR IGNORE INTO Tipo (Tipo) VALUES ('Accesorios');""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS Mercado_tipo(id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       Tipo INTEGER NOT NULL,
+                       Mercado INTEGER NOT NULL,
+                       FOREIGN KEY (Mercado) REFERENCES Mercado(id),
+                       FOREIGN KEY (Tipo) REFERENCES Tipo(idTipo));""")
+
         con.commit()
     def venta(self):#Esto es la esctutura de la ventana de ventas
         vent_ventas =QVBoxLayout()

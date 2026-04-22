@@ -50,6 +50,7 @@ class Mainwindow(QMainWindow):
         cur.execute("SELECT Nombre FROM Configuracion WHERE id = 1")
         datos = cur.fetchone()
         self.setWindowTitle(f"Kitsune - POS De {datos[0]}")
+        self.setWindowIcon(QIcon("Imagen/gemini-svg.ico"))
         self.setGeometry(100,100,800,640)
         self.setLayout(layout)
         self.tab.addTab(self.Widget,"Ventas")
@@ -706,10 +707,11 @@ class Mainwindow(QMainWindow):
         LTipoCom = QLabel("Tipo: ")
         self.TipoCom = QComboBox()
         self.TipoCom.addItem("Selecciona tipo")
-        cur.execute("""Select Tipo from Tipo""")
+        cur.execute("""Select idTipo,Tipo from Tipo""")
         Tipo = cur.fetchall()
+        self.TipoCom.clear()
         for t in Tipo:
-            self.TipoCom.addItem(t[0])
+            self.TipoCom.addItem(str(t[1]), t[0])
         HorizontalCom3.addWidget(LTipoCom)
         HorizontalCom3.addWidget(self.TipoCom)
         HorizontalCom4 = QHBoxLayout()
@@ -766,7 +768,7 @@ class Mainwindow(QMainWindow):
         Nombre = self.lENombreCom.text()
         Marca = self.LeMarcaCom.text()
         imagenProducto ="Imagen/Default.jpg"
-        tipo = self.TipoCom.currentIndex()
+        tipo = self.TipoCom.currentData()
         tipoText= self.TipoCom.currentText()
         if tipo==0 or tipoText=="Selecciona tipo":
             QMessageBox.warning(self,"Error","por favor de seleciona un tipo")
@@ -1503,12 +1505,12 @@ class Mainwindow(QMainWindow):
     def resource_path(relative_path):
         base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
         return os.path.join(base_path, relative_path)
-    ruta_logo = resource_path("Imagen/logo.png")
-    ruta_logo2 = resource_path("Imagen/logo2.png")
+
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
     try:
         # Verificamos si ya hay datos de la empresa
         cur.execute("SELECT COUNT(*) FROM Configuracion")

@@ -65,7 +65,7 @@ def InicializaccioDb():
     (98, "Deportes", "Disciplina", "Talla", "Marca"),
     (99, "Instrumentos", "Tipo", "Material", "Afinación"),
     (100, "Varios", "Detalle 1", "Detalle 2", "Detalle 3")]
-    cur.executemany("""INSERT INTO Tipo (idTipo,Tipo,Descripcion1,Descripcion2,Descripcion3) VALUES (?,?,?,?,?);""",(Tipo))
+    cur.executemany("""INSERT OR IGNORE INTO Tipo (idTipo,Tipo,Descripcion1,Descripcion2,Descripcion3) VALUES (?,?,?,?,?);""",(Tipo))
     Contenido_Tipo=[(1,"Chica","Algondo","Azul"),
                     (1,"Mediana","Lino","Amarillo"),
                     (1,"Grande","Cañamo","Cafe"),

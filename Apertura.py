@@ -1,6 +1,8 @@
 from PyQt5 import QtCore,QtGui
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication,QMainWindow,QVBoxLayout,QFileDialog,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox,QWidget)
 from Conexion import con,cur
+
 
 
 
@@ -10,6 +12,7 @@ class Apertura(QMainWindow):
         super().__init__()
         self.setWindowTitle("Configuración Inicial - Kitsune")
         self.setFixedSize(400,500)
+        self.setWindowIcon(QIcon("Imagen/gemini-svg.ico"))
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.Widget= QWidget()
         self.setCentralWidget(self.Widget)
@@ -18,6 +21,7 @@ class Apertura(QMainWindow):
         (id primary key CHECK(id=1),
             Nombre Text,
             Direcion Text,
+            Ciudad Text,
             Telefono Text,
             RFC TEXT,
             Ruta_Logo Text,
@@ -31,6 +35,9 @@ class Apertura(QMainWindow):
         self.Direcion=QLineEdit()
         self.Direcion.setPlaceholderText("Direcion de Tu Empresa")
         layout.addWidget(self.Direcion)
+        self.Ciudad=QLineEdit()
+        self.Ciudad.setPlaceholderText("Ciudad y Estados")
+        layout.addWidget(self.Ciudad)
         self.Telefono=QLineEdit()
         self.Telefono.setPlaceholderText("Telefono de Tu Empresa")
         layout.addWidget(self.Telefono)
@@ -77,6 +84,7 @@ class Apertura(QMainWindow):
     def Aceptar(self):
         nombre = self.Txt_nombre.text()
         Direccion = self.Direcion.text()
+        ciudad =self.Ciudad.text()
         Telefono = self.Telefono.text()
         Rfc = self.Rfc.text()
         ruta_logo = self.LogoText.text()
@@ -84,8 +92,8 @@ class Apertura(QMainWindow):
         try:
             cur.execute("""
             INSERT OR REPLACE INTO Configuracion
-            (id,Nombre,Direcion,Telefono,RFC,Ruta_Logo,Mensaje_Agradecimiento)
-             VALUES(1,?,?,?,?,?,?)""",(nombre,Direccion,Telefono,Rfc,ruta_logo,mensaje))
+            (id,Nombre,Direcion,Ciudad,Telefono,RFC,Ruta_Logo,Mensaje_Agradecimiento)
+             VALUES(1,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,ruta_logo,mensaje))
             con.commit()
             from main import Mainwindow
             self.Nueva_ventana=Mainwindow()

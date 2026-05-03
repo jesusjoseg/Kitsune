@@ -32,8 +32,10 @@ def CreaTicket(ventaid,metodo,Cleinte,totalventa,detalleTicket):
    datosDirecion = Resultado[0] if Resultado else "Empresa"
    c.drawCentredString(TicketAncho/2,Linea,f"{datosDirecion}")
    Linea -= 3 * mm
-
-   c.drawCentredString(TicketAncho / 2, Linea, "Hidalgo del Parral, Chih.")
+   cur.execute("""select  Ciudad from Configuracion;""")
+   Resultado = cur.fetchone()
+   datosCiudad = Resultado[0] if Resultado else "Empresa"
+   c.drawCentredString(TicketAncho / 2, Linea, f"{datosCiudad}")
    Linea -= 3 * mm
    cur.execute("""SELECT Telefono
                   FROM Configuracion;""")

@@ -48,4 +48,4 @@ El proyecto se gestiona mediante tres ramas principales para diferenciar las lic
 3. **Ejecuta la Aplicacion**
     ```bash
    python main.py
-## Sistemas de licencias
+## Sistemas de licenciass

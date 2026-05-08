@@ -1,4 +1,11 @@
 import subprocess
 import hashlib
 import requests
-def obtener_hwid:
+import platform
+import os
+from datetime import datetime, timedelta
+
+class SeguridadDemo:
+    def __init__(self):
+        self.app_data=os.path.join(os.environ[''],"")
+

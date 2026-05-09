@@ -10,7 +10,8 @@ from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWind
                              QFileDialog,QHeaderView,QDateEdit,QTableWidgetItem,QMessageBox)
 import sys
 import os
-
+import shutil
+from Seguridad import SeguridadDemo
 import TipoDatabase
 from Conexion import con,cur
 from PIL import Image
@@ -111,6 +112,33 @@ class Mainwindow(QMainWindow):
             color: white;
             border-bottom:none;
         }""")
+    def control_de_demo(self):
+        seg=SeguridadDemo()
+        info=seg.Verifica_estado()
+        dias=info['dia restante']
+        if 0 < dias <=5:
+            QMessageBox.warning(self,"Aviso de Licencia",f"f ¡Anteción! Tu prueba de Kitsune POS vence  en {dias} dias.\n"
+                                "Aquiere la version Basico o la PRO para no perder accesor a la aplicacion")
+        elif dias<=0:
+            self.Mostra_Boqueor()
+    def Mostra_Boqueor(self):
+        msg=QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Demo Finalizada")
+        msg.setText("Gracias por usa la aplicacion Kitsune POS. ")
+        msg.setInformativeText("Tu periodo de 30 dias  ha terminado. para continuar , adquiere una licencia.")
+        btn_exporta=  msg.addButton("Exportar Base de datos",QMessageBox.ActionRole)
+        btn_salir = msg.addButton("Salir",QMessageBox.DestructiveRole)
+        msg.exec()
+        if msg.clickedButton() == btn_exporta:
+            self.exporta_db()
+        sys.exit()
+    def exporta_db(self):
+        path, _ = QFileDialog.getSaveFileName(None, "Exportar Base de datos", "database.db","*.db")
+        if path:
+            shutil.copy2("database.db",path)
+            QMessageBox.information(None,"Exito","Base de dato exportado. Tes esperamo en una nuestras vesiones" )
+
     def DescargaImagen(self):#sirve para descarga imagenes de internet  desde una url.
         FileImagen="Imagen/Download"
         os.makedirs(FileImagen,exist_ok=True)

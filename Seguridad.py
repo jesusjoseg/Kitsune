@@ -15,7 +15,9 @@ class SeguridadDemo:
             m_board=subprocess.check_output('wmic baseboard get serialnumber',shell=True).decode().split('\n')[1].strip()
             cpu=subprocess.check_output('wmic cpu get processorid',shell=True).decode().split('\n')[1].strip()
             raw_id =f"Kitsune-{m_board}-{cpu}"
+            print(raw_id)
             return hashlib.sha256(raw_id.encode()).hexdigest()[:16].upper()
+
         except:
             return "ID_Unknowk"
 

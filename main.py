@@ -11,7 +11,6 @@ from PyQt5.QtWidgets import (QWidget, QApplication,QPushButton,QLabel, QMainWind
 import sys
 import os
 import shutil
-from Seguridad import SeguridadDemo
 import TipoDatabase
 from Conexion import con,cur
 from PIL import Image
@@ -112,6 +111,7 @@ class Mainwindow(QMainWindow):
             color: white;
             border-bottom:none;
         }""")
+
     def control_de_demo(self):
         seg=SeguridadDemo()
         info=seg.Verifica_estado()

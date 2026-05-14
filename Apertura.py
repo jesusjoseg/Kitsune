@@ -24,6 +24,7 @@ class Apertura(QMainWindow):
             Ciudad Text,
             Telefono Text,
             RFC TEXT,
+            Correo TEXT,
             Ruta_Logo Text,
             Mensaje_Agradecimiento text);""")
         con.commit()
@@ -44,6 +45,9 @@ class Apertura(QMainWindow):
         self.Rfc=QLineEdit()
         self.Rfc.setPlaceholderText("Rfc de Tu Empresa")
         layout.addWidget(self.Rfc)
+        self.Correo = QLineEdit()
+        self.Correo.setPlaceholderText("Correo de Tu Cuentra Kitsune")
+        layout.addWidget(self.Correo)
         self.Logo=QPushButton("Logo de tu Empresa")
         self.LogoText=QLineEdit()
         self.LogoText.setReadOnly(True)
@@ -87,13 +91,14 @@ class Apertura(QMainWindow):
         ciudad =self.Ciudad.text()
         Telefono = self.Telefono.text()
         Rfc = self.Rfc.text()
+        Correo=self.Correo.text()
         ruta_logo = self.LogoText.text()
         mensaje = self.Mensaje.text()
         try:
             cur.execute("""
             INSERT OR REPLACE INTO Configuracion
-            (id,Nombre,Direcion,Ciudad,Telefono,RFC,Ruta_Logo,Mensaje_Agradecimiento)
-             VALUES(1,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,ruta_logo,mensaje))
+            (id,Nombre,Direcion,Ciudad,Telefono,RFC,Correo,Ruta_Logo,Mensaje_Agradecimiento)
+             VALUES(1,?,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,Correo,ruta_logo,mensaje))
             con.commit()
             from main import Mainwindow
             self.Nueva_ventana=Mainwindow()

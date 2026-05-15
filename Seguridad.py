@@ -54,7 +54,7 @@ class SeguridadDemo:
                 # Si el archivo ya está limpio o es formato simple, lo devolvemos tal cual
                 return contenido
 
-    def Verifica_estado(self):
+    def Verifica_estado(self ,correo):
         fecha_instala_str = self.Gestiona_rastro_local()
         fecha_instala = datetime.strptime(fecha_instala_str, '%Y-%m-%d')
         dia_usados = (datetime.now() - fecha_instala).days
@@ -64,14 +64,13 @@ class SeguridadDemo:
         datos = {
             "hwid": self.Obtener_hwid(),
             "NombrePc": platform.node(),
-            "Version": "V1.0_Demos",
-            "Dias_Restantes": dias_restantes
+            "correo": correo
         }
         return datos
 
-    def Enviar_Vinculacion(self):
+    def Enviar_Vinculacion(self ,correo):
         """Envía los datos a VerificarDemo.php para actualizar la tabla Usuario"""
-        datos_enviar = self.Verifica_estado()
+        datos_enviar = self.Verifica_estado(correo)
         try:
             # Enviamos los datos por POST
             response = requests.post(self.url_php, data=datos_enviar, timeout=7)

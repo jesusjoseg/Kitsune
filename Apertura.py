@@ -100,17 +100,17 @@ class Apertura(QMainWindow):
         if not Correo:
             QMessageBox.warning(self,"Atencion","El correo es importante para la vinculacion de la applicacion con su licencia")
             return
-        seg= SeguridadDemo()
-        respuesta= SeguridadDemo.Enviar_Vinculacion(Correo)
+        seg = SeguridadDemo()
+        respuesta= seg.Enviar_Vinculacion(Correo)
         if respuesta.get("status")=="success":
             token_servidor = respuesta.get("token")
             try:
                 cur.execute("""
                 INSERT OR REPLACE INTO Configuracion
-                (id,Nombre,Direcion,Ciudad,Telefono,RFC,Correo,Ruta_Logo,Mensaje_Agradecimiento)
-                VALUES(1,?,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,Correo,ruta_logo,mensaje))
+                (id,Nombre,Direcion,Ciudad,Telefono,RFC,Correo,Token,Ruta_Logo,Mensaje_Agradecimiento)
+                VALUES(1,?,?,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,Correo,token_servidor,ruta_logo,mensaje))
                 con.commit()
-                url_dashboard=f"http://localhost:3000/dashboard_usuario.php?access_token{token_servidor}"
+                url_dashboard=f"http://localhost:3000/dashboard_usuario.php?access_token={token_servidor}"
                 webbrowser.open(url_dashboard)
                 from main import Mainwindow
                 self.Nueva_ventana=Mainwindow()

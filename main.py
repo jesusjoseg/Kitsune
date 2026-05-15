@@ -16,6 +16,7 @@ from Conexion import con,cur
 from PIL import Image
 import mimetypes
 import reporte
+from Seguridad import SeguridadDemo
 from datetime import datetime, date
 from Ticket import CreaTicket
 import platform

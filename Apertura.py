@@ -25,6 +25,7 @@ class Apertura(QMainWindow):
             Telefono Text,
             RFC TEXT,
             Correo TEXT,
+            Token TEXT,
             Ruta_Logo Text,
             Mensaje_Agradecimiento text);""")
         con.commit()
@@ -86,6 +87,8 @@ class Apertura(QMainWindow):
             return
         self.Aceptar()
     def Aceptar(self):
+        from Seguridad import SeguridadDemo
+        import webbrowser
         nombre = self.Txt_nombre.text()
         Direccion = self.Direcion.text()
         ciudad =self.Ciudad.text()
@@ -94,18 +97,30 @@ class Apertura(QMainWindow):
         Correo=self.Correo.text()
         ruta_logo = self.LogoText.text()
         mensaje = self.Mensaje.text()
-        try:
-            cur.execute("""
-            INSERT OR REPLACE INTO Configuracion
-            (id,Nombre,Direcion,Ciudad,Telefono,RFC,Correo,Ruta_Logo,Mensaje_Agradecimiento)
-             VALUES(1,?,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,Correo,ruta_logo,mensaje))
-            con.commit()
-            from main import Mainwindow
-            self.Nueva_ventana=Mainwindow()
-            self.Nueva_ventana.show()
-            self.close()
-        except Exception as e:
-            QMessageBox.critical(self,"Error en la base de dato",f"no se pudo guardar:{e}")
+        if not Correo:
+            QMessageBox.warning(self,"Atencion","El correo es importante para la vinculacion de la applicacion con su licencia")
+            return
+        seg= SeguridadDemo()
+        respuesta= SeguridadDemo.Enviar_Vinculacion(Correo)
+        if respuesta.get("status")=="success":
+            token_servidor = respuesta.get("token")
+            try:
+                cur.execute("""
+                INSERT OR REPLACE INTO Configuracion
+                (id,Nombre,Direcion,Ciudad,Telefono,RFC,Correo,Ruta_Logo,Mensaje_Agradecimiento)
+                VALUES(1,?,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,Correo,ruta_logo,mensaje))
+                con.commit()
+                url_dashboard=f"http://localhost:3000/dashboard_usuario.php?access_token{token_servidor}"
+                webbrowser.open(url_dashboard)
+                from main import Mainwindow
+                self.Nueva_ventana=Mainwindow()
+                self.Nueva_ventana.show()
+                self.close()
+            except Exception as e:
+                QMessageBox.critical(self,"Error en la base de dato",f"no se pudo guardar:{e}")
+        else:
+            MesajeErro= respuesta.get("message","Error desconocido al contacrtac servido")
+            QMessageBox.critical(self,"Error de viculacion",MesajeErro)
     def Cargar_Logo(self):
         ruta, _ =QFileDialog.getOpenFileName(self, "Seleccionar Logo", "", "Imágenes (*.png *.jpg)")
         if ruta !="":

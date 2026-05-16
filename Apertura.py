@@ -110,7 +110,7 @@ class Apertura(QMainWindow):
                 (id,Nombre,Direcion,Ciudad,Telefono,RFC,Correo,Token,Ruta_Logo,Mensaje_Agradecimiento)
                 VALUES(1,?,?,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,Correo,token_servidor,ruta_logo,mensaje))
                 con.commit()
-                url_dashboard=f"http://localhost:3000/dashboard_usuario.php?access_token={token_servidor}"
+                url_dashboard=f"https://kitsunepos.rf.gd/dashboard_usuario.php?access_token={token_servidor}"
                 webbrowser.open(url_dashboard)
                 from main import Mainwindow
                 self.Nueva_ventana=Mainwindow()

@@ -52,7 +52,7 @@ class Mainwindow(QMainWindow):
         cur.execute("SELECT Nombre FROM Configuracion WHERE id = 1")
         datos = cur.fetchone()
         self.setWindowTitle(f"Kitsune - POS De {datos[0]}")
-        self.setWindowIcon(QIcon("Imagen/gemini-svg.ico"))
+        self.setWindowIcon(QIcon(Mainwindow.resource_path("Imagen/gemini-svg.ico")))
         self.setGeometry(100,100,800,640)
         self.setLayout(layout)
         self.tab.addTab(self.Widget,"Ventas")
@@ -815,7 +815,7 @@ class Mainwindow(QMainWindow):
         CodigoCom = self.LECodigoCom.text()
         Nombre = self.lENombreCom.text()
         Marca = self.LeMarcaCom.text()
-        imagenProducto ="Imagen/Default.jpg"
+        imagenProducto ="Imagen/default.jpg"
         tipo = self.TipoCom.currentData()
         tipoText= self.TipoCom.currentText()
         if tipo==0 or tipoText=="Selecciona tipo":
@@ -1145,12 +1145,12 @@ class Mainwindow(QMainWindow):
         print(UrlImagen)
         NombreAct = self.LENombreIn.text()
         Marca = self.LEMarca.text()
-        Tipo = self.ComboTipo.currentIndex()
+        Tipo = self.ComboTipo.currentText()
         Descripcion = self.LDescripcionInve.text()
         PVentas = self.SRecioVEnta.text()
         PComra = self.SrecioComra.text()
         Stock = self.SStrock.text()
-        cur.execute("""UPDATE Productos SET Nombre = ? , UrlImagen = ?,Marca = ?, Tipo = ?,Descripcion = ?,PVentas = ?,PComra = ? ,Stock = ? WHERE Codigo = ?;""",(NombreAct,UrlImagen,Marca,Tipo,Descripcion,PVentas,PComra,Stock ,CodigoImagen))
+        cur.execute("""UPDATE Productos SET Nombre = ? , UrlImagen = ?,Marca = ?, Tipo = (SELECT idTipo FROM Tipo WHERE Tipo = ?),Descripcion = ?,PVentas = ?,PComra = ? ,Stock = ? WHERE Codigo = ?;""",(NombreAct,UrlImagen,Marca,Tipo,Descripcion,PVentas,PComra,Stock ,CodigoImagen))
         con.commit()
         cur.execute("""SELECT p.Codigo, p.UrlImagen, p.Nombre, p.Marca, t.Tipo, p.Descripcion, p.PVentas, p.PComra, p.Stock 
                        FROM Productos p INNER JOIN Tipo t ON p.Tipo = t.idTipo ;""")

@@ -11,7 +11,7 @@ class SeguridadDemo:
         self.app_data = os.path.join(os.environ['LOCALAPPDATA'], "KITSUNE_DEMO")
         self.rastro_file = os.path.join(self.app_data, "win_log_sys.dat")
         # Asegúrate de que esta URL sea la de tu servidor local o remoto
-        self.url_php = "http://localhost:3000/VerificarDemo.php"
+        self.url_php = "https://kitsunepos.rf.gd/VerificarDemo.php"
 
     def Obtener_hwid(self):
         try:
@@ -69,12 +69,73 @@ class SeguridadDemo:
         }
         return datos
 
-    def Enviar_Vinculacion(self ,correo):
-        """Envía los datos a VerificarDemo.php para actualizar la tabla Usuario"""
+    def Enviar_Vinculacion(self, correo):
+        """Envía los datos a VerificarDemo.php resolviendo el bloqueo AES de InfinityFree"""
+        import re
+        from Crypto.Cipher import AES
+
         datos_enviar = self.Verifica_estado(correo)
+
+        cabeceras = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        }
+
+        sesion = requests.Session()  # Usamos una sesión para que recuerde las cookies
+
         try:
-            # Enviamos los datos por POST
-            response = requests.post(self.url_php, data=datos_enviar, timeout=7)
-            return response.json()
-        except Exception as e:
-            return {"status": "error", "mensaje": str(e)}
+            # 1. Primer intento: Recibir el reto JavaScript
+            response = sesion.post(
+                self.url_php,
+                data=datos_enviar,
+                headers=cabeceras,
+                timeout=10,
+                verify=False
+            )
+
+            # Si InfinityFree nos mandó su script AES, lo resolvemos matemáticamente
+            if "slowAES.decrypt" in response.text:
+                print("[InfinityFree] Sistema de seguridad AES detectado. Calculando Cookie...")
+
+                # Extraemos los tres valores hexadecimales usando Expresiones Regulares (re)
+                matches = re.findall(r'toNumbers\("([a-f0-9]+)"\)', response.text)
+
+                if len(matches) >= 3:
+                    # Convertimos los strings hex a bytes reales tal como hace el JavaScript
+                    a_bytes = bytes.fromhex(matches[0])
+                    b_bytes = bytes.fromhex(matches[1])
+                    c_bytes = bytes.fromhex(matches[2])
+
+                    # El script usa AES en modo CBC sin padding estándar (o manual)
+                    # Configuramos el descifrador con la clave (a) y el vector de inicialización (b)
+                    cipher = AES.new(a_bytes, AES.MODE_CBC, b_bytes)
+                    decrypted = cipher.decrypt(c_bytes)
+
+                    # Convertimos el resultado a formato hexadecimal (esta es la cookie original)
+                    cookie_val = decrypted.hex().lower()
+
+                    # Inyectamos la cookie autorizada en nuestra sesión de Python
+                    sesion.cookies.set("__test", cookie_val, domain="kitsunepos.rf.gd", path="/")
+                    print(r"[InfinityFree] ¡Cookie __test generada con éxito!")
+
+                    # 2. Segundo intento: Ahora que tenemos la cookie instalada, volvemos a enviar el formulario
+                    cabeceras["Accept"] = "application/json"  # Ahora sí pedimos el JSON limpio
+                    response = sesion.post(
+                        self.url_php,
+                        data=datos_enviar,
+                        headers=cabeceras,
+                        timeout=10,
+                        verify=False
+                    )
+
+            # Imprimimos en consola para verificar el resultado final limpio
+            print("Código final del servidor:", response.status_code)
+            print("Respuesta real del servidor:", response.text)
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return {"status": "error", "message": f"Error del servidor: {response.status_code}"}
+
+        except requests.exceptions.RequestException as e:
+            return {"status": "error", "message": f"No se pudo conectar al servidor: {e}"}

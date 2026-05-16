@@ -113,16 +113,34 @@ class Mainwindow(QMainWindow):
             color: white;
             border-bottom:none;
         }""")
-
+        self.control_de_demo()
     def control_de_demo(self):
-        seg=SeguridadDemo()
-        info=seg.Verifica_estado()
-        dias=info['dia restante']
-        if 0 < dias <=5:
-            QMessageBox.warning(self,"Aviso de Licencia",f"f ¡Anteción! Tu prueba de Kitsune POS vence  en {dias} dias.\n"
-                                "Aquiere la version Basico o la PRO para no perder accesor a la aplicacion")
-        elif dias<=0:
-            self.Mostra_Boqueor()
+        try:
+            seg = SeguridadDemo()
+
+            # 1. Llamamos directo a la función que extrae la fecha del archivo .dat (sin correos)
+            fecha_instala_str = seg.Gestiona_rastro_local()
+
+            # 2. Convertimos el texto a una fecha real de Python
+            fecha_instala = datetime.strptime(fecha_instala_str, '%Y-%m-%d')
+
+            # 3. Calculamos la diferencia de días con el día de hoy
+            dia_usados = (datetime.now() - fecha_instala).days
+            dias_restantes = 30 - dia_usados
+
+            # Print de control para que veas el cálculo real en tu consola negra
+            print(f"--- VERIFICACIÓN LOCAL --- Días restantes: {dias_restantes}")
+
+            if 0 < dias_restantes <= 5:
+                QMessageBox.warning(self, "Aviso de Licencia",
+                                    f"¡Atención! Tu prueba de Kitsune POS vence en {dias_restantes} días.\n"
+                                    "Adquiere la versión PRO para no perder acceso a la aplicación.")
+            elif dias_restantes <= 0:
+                print("¡Demo expirada! Bloqueando sistema...")
+                self.Mostra_Boqueor()
+
+        except Exception as e:
+            print(f"Error en control_de_demo: {e}")
     def Mostra_Boqueor(self):
         msg=QMessageBox()
         msg.setIcon(QMessageBox.Information)

@@ -64,7 +64,8 @@ class SeguridadDemo:
         datos = {
             "hwid": self.Obtener_hwid(),
             "NombrePc": platform.node(),
-            "correo": correo
+            "correo": correo,
+            "dias_restantes": dias_restantes
         }
         return datos
 

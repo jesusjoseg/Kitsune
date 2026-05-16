@@ -3,10 +3,6 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication,QMainWindow,QVBoxLayout,QFileDialog,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox,QWidget)
 from Conexion import con,cur
 
-
-
-
-
 class Apertura(QMainWindow):
     def __init__(self):
         super().__init__()

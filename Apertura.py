@@ -2,6 +2,7 @@ from PyQt5 import QtCore,QtGui
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication,QMainWindow,QVBoxLayout,QFileDialog,QLabel,QLineEdit,QComboBox,QPushButton,QMessageBox,QWidget)
 from Conexion import con,cur
+from  Seguridad import SeguridadDemo
 
 class Apertura(QMainWindow):
     def __init__(self):
@@ -44,7 +45,7 @@ class Apertura(QMainWindow):
         layout.addWidget(self.Rfc)
         self.Correo = QLineEdit()
         self.Correo.setPlaceholderText("Correo de Tu Cuentra Kitsune")
-        layout.addWidget(self.Correo)
+
         self.Logo=QPushButton("Logo de tu Empresa")
         self.LogoText=QLineEdit()
         self.LogoText.setReadOnly(True)
@@ -83,8 +84,6 @@ class Apertura(QMainWindow):
             return
         self.Aceptar()
     def Aceptar(self):
-        from Seguridad import SeguridadDemo
-        import webbrowser
         nombre = self.Txt_nombre.text()
         Direccion = self.Direcion.text()
         ciudad =self.Ciudad.text()
@@ -93,30 +92,22 @@ class Apertura(QMainWindow):
         Correo=self.Correo.text()
         ruta_logo = self.LogoText.text()
         mensaje = self.Mensaje.text()
-        if not Correo:
-            QMessageBox.warning(self,"Atencion","El correo es importante para la vinculacion de la applicacion con su licencia")
-            return
-        seg = SeguridadDemo()
-        respuesta= seg.Enviar_Vinculacion(Correo)
-        if respuesta.get("status")=="success":
-            token_servidor = respuesta.get("token")
-            try:
-                cur.execute("""
-                INSERT OR REPLACE INTO Configuracion
-                (id,Nombre,Direcion,Ciudad,Telefono,RFC,Correo,Token,Ruta_Logo,Mensaje_Agradecimiento)
-                VALUES(1,?,?,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,Correo,token_servidor,ruta_logo,mensaje))
-                con.commit()
-                url_dashboard=f"https://kitsunepos.rf.gd/dashboard_usuario.php?access_token={token_servidor}"
-                webbrowser.open(url_dashboard)
-                from main import Mainwindow
-                self.Nueva_ventana=Mainwindow()
-                self.Nueva_ventana.show()
-                self.close()
-            except Exception as e:
-                QMessageBox.critical(self,"Error en la base de dato",f"no se pudo guardar:{e}")
-        else:
-            MesajeErro= respuesta.get("message","Error desconocido al contacrtac servido")
-            QMessageBox.critical(self,"Error de viculacion",MesajeErro)
+        tokken_demo="Kitsune-Demo-LOCAL"
+        correo_fijo="demo@local.com"
+        try:
+            cur.execute("""
+            INSERT OR REPLACE INTO Configuracion
+            (id,Nombre,Direcion,Ciudad,Telefono,RFC,Correo,Token,Ruta_Logo,Mensaje_Agradecimiento)
+            VALUES(1,?,?,?,?,?,?,?,?,?)""",(nombre,Direccion,ciudad,Telefono,Rfc,correo_fijo,tokken_demo,ruta_logo,mensaje))
+            con.commit()
+            seg= SeguridadDemo()
+            seg.Verficar_Licencia()
+            from main import Mainwindow
+            self.Nueva_ventana=Mainwindow()
+            self.Nueva_ventana.show()
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self,"Error en la base de dato",f"no se pudo guardar:{e}")
     def Cargar_Logo(self):
         ruta, _ =QFileDialog.getOpenFileName(self, "Seleccionar Logo", "", "Imágenes (*.png *.jpg)")
         if ruta !="":

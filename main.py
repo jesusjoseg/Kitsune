@@ -116,25 +116,26 @@ class Mainwindow(QMainWindow):
         self.control_de_demo()
     def control_de_demo(self):
         try:
+            # 1. Instanciamos la clase de seguridad
             seg = SeguridadDemo()
 
-            # 1. Llamamos directo a la función que extrae la fecha del archivo .dat (sin correos)
-            fecha_instala_str = seg.Gestiona_rastro_local()
+            # 2. Llamamos a la función que lee el archivo oculto y calcula los días automáticamente
+            resultado = seg.Verficar_Licencia()
 
-            # 2. Convertimos el texto a una fecha real de Python
-            fecha_instala = datetime.strptime(fecha_instala_str, '%Y-%m-%d')
+            # 3. Extraemos el número de días restantes que calculó Seguridad.py
+            # Usamos .get("dia", 0) porque así lo llamaste en la clave de tu diccionario
+            dias_restantes = resultado.get("dia", 0)
 
-            # 3. Calculamos la diferencia de días con el día de hoy
-            dia_usados = (datetime.now() - fecha_instala).days
-            dias_restantes = 30 - dia_usados
-
-            # Print de control para que veas el cálculo real en tu consola negra
+            # Print de control para que sigas viendo el cálculo en tu consola negra
             print(f"--- VERIFICACIÓN LOCAL --- Días restantes: {dias_restantes}")
 
+            # 4. Filtros de alertas y bloqueos basados en la respuesta
             if 0 < dias_restantes <= 5:
                 QMessageBox.warning(self, "Aviso de Licencia",
                                     f"¡Atención! Tu prueba de Kitsune POS vence en {dias_restantes} días.\n"
                                     "Adquiere la versión PRO para no perder acceso a la aplicación.")
+
+            # Si el contador llegó a 0 o números negativos, bloqueamos de inmediato
             elif dias_restantes <= 0:
                 print("¡Demo expirada! Bloqueando sistema...")
                 self.Mostra_Boqueor()
